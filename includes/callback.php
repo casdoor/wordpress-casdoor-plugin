@@ -72,33 +72,12 @@ if (!empty($_GET['code'])) {
         wp_die($tokens->error_description);
     }
 
-    $token_server_url = casdoor_get_option('backend') . '/api/get-account';
+    $access_token = $tokens->access_token;
+    $info = json_decode(base64_decode(str_replace('_', '/', str_replace('-', '+', explode('.', $access_token)[1]))));
     
-    $token_response   = wp_remote_get($token_server_url, [
-        'timeout'     => 45,
-        'redirection' => 5,
-        'httpversion' => '1.0',
-        'blocking'    => true,
-        'headers'     => [],
-        'sslverify'   => false,
-        'cookies'     => ['casdoor_session_id' => $_COOKIE['casdoor_session_id'] ?? '']
-    ]);
-    
-    if (is_wp_error($token_response)) {
-        $error_message = $token_response->get_error_message();
-        echo "Something went wrong: $error_message";
-    }
+    $user_id = username_exists($info->name);
 
-    $user_info = json_decode($token_response['body']);
-    if ($user_info->status === 'error') {
-        echo $user_info->msg;
-        exit;
-    }
-
-    $user_info = $user_info->data;
-    $user_id = username_exists($user_info->name);
-
-    if (!$user_id && email_exists($user_info->email) == false) {
+    if (!$user_id && (empty($info->email) || email_exists($info->email) == false)) {
         if (casdoor_get_option('login_only') == 1) {
             wp_safe_redirect(wp_login_url() . '?casdoor_login_only');
             exit;
@@ -106,15 +85,19 @@ if (!empty($_GET['code'])) {
 
         // Does not have an account... Register and then log the user in
         $random_password = wp_generate_password($length = 12, $include_standard_special_chars = false);
-        $user_id         = wp_create_user($user_info->name, $random_password, $user_info->email);
+        if (empty($info->email)) {
+            $user_id = wp_create_user($info->name, $random_password);
+        } else {
+            $user_id = wp_create_user($info->name, $random_password, $info->email);
+        }
 
-        if (isset($user_info->displayName)) {
-            update_user_meta($user_id, 'display_name', $user_info->displayName);
+        if (isset($info->displayName)) {
+            update_user_meta($user_id, 'display_name', $info->displayName);
         }
 
         // Trigger new user created action so that there can be modifications to what happens after the user is created.
         // This can be used to collect other information about the user.
-        do_action('casdoor_user_created', $user_info, 1);
+        do_action('casdoor_user_created', $info, 1);
 
         wp_clear_auth_cookie();
         wp_set_current_user($user_id);
@@ -128,23 +111,23 @@ if (!empty($_GET['code'])) {
         // Already Registered... Log the User In using ID or Email
         $random_password = __('User already exists.  Password inherited.');
         // Get the user by name
-        $user            = get_user_by('login', $user_info->name);
+        $user            = get_user_by('login', $info->name);
 
         /*
          * Added just in case the user is not used but the email may be. If the user returns false from the user ID,
          * we should check the user by email. This may be the case when the users are preregistered outside of OAuth
          */
         if (!$user) {
-            $user = get_user_by('email', $user_info->email);
+            $user = get_user_by('email', $info->email);
         }
 
-        if (isset($user_info->displayName)) {
-            update_user_meta($user->ID, 'display_name', $user_info->displayName);
+        if (isset($info->displayName)) {
+            update_user_meta($user->ID, 'display_name', $info->displayName);
         }
 
         // Trigger action when a user is logged in.
         // This will help allow extensions to be used without modifying the core plugin.
-        do_action('casdoor_user_login', $user_info, 1);
+        do_action('casdoor_user_login', $info, 1);
 
         // User ID 1 is not allowed
         if ('1' === $user->ID) {
