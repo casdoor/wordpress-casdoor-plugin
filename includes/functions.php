@@ -3,6 +3,28 @@
 // ABSPATH prevent public user to directly access your .php files through URL.
 defined('ABSPATH') or die('No script kiddies please!');
 
+function defaults()
+{
+    return [
+        'client_id'             => '',
+        'client_secret'         => '',
+        'frontend'              => '',
+        'backend'               => '',
+        'redirect_to_dashboard' => 0,
+        'login_only'            => 0,
+    ];
+}
+
+function get_options()
+{
+    $options = get_option(casdoor_admin::OPTIONS_NAME, []);
+    if (!is_array($options)) {
+        $options = defaults();
+    }
+    $options = array_merge(defaults(), $options);
+    return $options;
+}
+
 /**
  * get option value
  *
@@ -12,10 +34,17 @@ defined('ABSPATH') or die('No script kiddies please!');
  */
 function casdoor_get_option(string $option_name)
 {
-    $options = get_option('casdoor_options');
+    $options = get_options();
     if (!empty($v = $options[$option_name])) {
         return $v;
     }
+}
+
+function casdoor_set_options(string $key, $value)
+{
+    $options = get_options();
+    $options[$key] = $value;
+    update_option(casdoor_admin::OPTIONS_NAME, $options);
 }
 
 /**
