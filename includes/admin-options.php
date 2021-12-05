@@ -143,6 +143,14 @@ class casdoor_admin
                                            value="1" <?= casdoor_get_option('login_only') == 1 ? 'checked="checked"' : ''; ?> />
                                 </td>
                             </tr>
+                            <tr valign="top">
+                                <th scope="row">Auto SSO for users that are not logged in</th>
+                                <td>
+                                    <input type="checkbox"
+                                           name="<?= $this->option_name ?>[auto_sso]"
+                                           value="1" <?= casdoor_get_option('auto_sso') == 1 ? 'checked="checked"' : ''; ?> />
+                                </td>
+                            </tr>
                         </table>
                         
                         <p class="submit">

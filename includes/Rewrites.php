@@ -21,6 +21,7 @@ class Rewrites
     public function add_query_vars($qvars): array
     {
         $qvars[] = 'auth';
+        $qvars[] = 'code';
         return $qvars;
     }
 
@@ -33,19 +34,28 @@ class Rewrites
     public function template_redirect_intercept(): void
     {
         global $wp_query;
-        // casdoor will add another ? to the uri, this will make the value of auth like this : casdoor?code=c9550137370a99bc2137
-        $matches = [];
-        preg_match('/^([a-zA-Z]+)(\?code=[a-zA-Z0-9]+)?$/', $wp_query->get('auth'), $matches);
-        if (count($matches) == 3 && $matches[1] == 'casdoor') {
-            $tmp = explode('=', $matches[2]);
-            if ($tmp[0] == '?code') {
-                $url =  home_url("?auth=casdoor&code={$tmp[1]}");
-                wp_redirect($url);
+        $auth = $wp_query->get('auth');
+        $options = get_option('casdoor_options');
+
+        if ($auth !== '') {
+            // casdoor will add another ? to the uri, this will make the value of auth like this : casdoor?code=c9550137370a99bc2137
+            $matches = [];
+            preg_match('/^([a-zA-Z]+)(\?code=[a-zA-Z0-9]+)?$/', $auth, $matches);
+            if (count($matches) == 3 && $matches[1] == 'casdoor') {
+                $tmp = explode('=', $matches[2]);
+                if ($tmp[0] == '?code') {
+                    $url =  home_url("?auth=casdoor&code={$tmp[1]}");
+                    wp_redirect($url);
+                    exit;
+                }
             }
         }
 
-        if ($wp_query->get('auth') && $wp_query->get('auth') == 'casdoor') {
-            require_once(dirname(dirname(__FILE__)) . '/includes/callback.php');
+        // Auto SSO for users that are not logged in.
+        $auto_sso = isset($options['auto_sso']) && $options['auto_sso'] == 1 && !is_user_logged_in();
+
+        if ($auth == 'casdoor' || $auto_sso) {
+            require_once(CASDOOR_PLUGIN_DIR . '/includes/callback.php');
             exit;
         }
     }

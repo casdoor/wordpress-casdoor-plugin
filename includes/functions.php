@@ -4,19 +4,6 @@
 defined('ABSPATH') or die('No script kiddies please!');
 
 /**
- * @todo
- * Auto redirect for users that are not logged in.
- */
-add_filter('template_redirect', 'casdoor_init', 11);
-
-function casdoor_init($template)
-{
-    // if (!is_user_logged_in()) {
-    //     $options = get_option('casdoor_options');
-    // }
-}
-
-/**
  * get option value
  *
  * @param string $option_name

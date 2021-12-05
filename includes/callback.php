@@ -27,7 +27,7 @@ if (!isset($_GET['code'])) {
         'client_id'     => casdoor_get_option('client_id'),
         'client_secret' => casdoor_get_option('client_secret'),
         'redirect_uri'  => site_url('?auth=casdoor'),
-        'state'         => $user_redirect
+        'state'         => urlencode($user_redirect)
     ];
     $params = http_build_query($params);
     wp_redirect(casdoor_get_option('frontend') . '/login/oauth/authorize?' . $params);
