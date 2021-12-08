@@ -8,9 +8,8 @@ defined('ABSPATH') or die('No script kiddies please!');
  */
 class casdoor_admin
 {
-    protected $option_name = 'casdoor_options';
+    const OPTIONS_NAME = 'casdoor_options';
 
-    
     public static function init()
     {
         // add_action adds a callback function to an action hook.
@@ -29,7 +28,7 @@ class casdoor_admin
     public function admin_init()
     {
         // A callback function that sanitizes the option's value
-        register_setting('casdoor_options', $this->option_name, [$this, 'validate']);
+        register_setting('casdoor_options', self::OPTIONS_NAME, [$this, 'validate']);
     }
 
     /**
@@ -88,7 +87,7 @@ class casdoor_admin
                         <li>Copy the Client ID and Client Secret in Step 2 below.</li>
                     </ol>
                 </div>
-                <h4 id="ssso-configuration">Step 2: Configuration</h4>
+                <h4 id="sso-configuration">Step 2: Configuration</h4>
                 <div>
                     <form method="post" action="options.php">
                         <?php settings_fields('casdoor_options'); ?>
@@ -96,7 +95,7 @@ class casdoor_admin
                             <tr valign="top">
                                 <th scope="row">Client ID</th>
                                 <td>
-                                    <input type="text" name="<?= $this->option_name ?>[client_id]" min="10"
+                                    <input type="text" name="<?= self::OPTIONS_NAME ?>[client_id]" min="10"
                                            value="<?= casdoor_get_option('client_id') ?>"/>
                                 </td>
                             </tr>
@@ -104,7 +103,7 @@ class casdoor_admin
                             <tr valign="top">
                                 <th scope="row">Client Secret</th>
                                 <td>
-                                    <input type="text" name="<?= $this->option_name ?>[client_secret]" min="10"
+                                    <input type="text" name="<?= self::OPTIONS_NAME ?>[client_secret]" min="10"
                                            value="<?= casdoor_get_option('client_secret'); ?>"/>
                                 </td>
                             </tr>
@@ -112,7 +111,7 @@ class casdoor_admin
                             <tr valign="top">
                                 <th scope="row">Frontend URL</th>
                                 <td>
-                                    <input type="text" name="<?= $this->option_name ?>[frontend]" min="10"
+                                    <input type="text" name="<?= self::OPTIONS_NAME ?>[frontend]" min="10"
                                            value="<?= casdoor_get_option('frontend'); ?>"/>
                                     <p class="description">Example: https://your-casdoor-frontend.com</p>
                                 </td>
@@ -121,7 +120,7 @@ class casdoor_admin
                             <tr valign="top">
                                 <th scope="row">Backend URL</th>
                                 <td>
-                                    <input type="text" name="<?= $this->option_name ?>[backend]" min="10"
+                                    <input type="text" name="<?= self::OPTIONS_NAME ?>[backend]" min="10"
                                            value="<?= casdoor_get_option('backend'); ?>"/>
                                     <p class="description">Example: https://your-casdoor-backend.com</p>
                                 </td>
@@ -131,7 +130,7 @@ class casdoor_admin
                                 <th scope="row">Redirect to the dashboard after signing in</th>
                                 <td>
                                     <input type="checkbox"
-                                           name="<?= $this->option_name ?>[redirect_to_dashboard]"
+                                           name="<?= self::OPTIONS_NAME ?>[redirect_to_dashboard]"
                                            value="1" <?= casdoor_get_option('redirect_to_dashboard') == 1 ? 'checked="checked"' : ''; ?> />
                                 </td>
                             </tr>
@@ -139,7 +138,7 @@ class casdoor_admin
                                 <th scope="row">Restrict flow to log in only</th>
                                 <td>
                                     <input type="checkbox"
-                                           name="<?= $this->option_name ?>[login_only]"
+                                           name="<?= self::OPTIONS_NAME ?>[login_only]"
                                            value="1" <?= casdoor_get_option('login_only') == 1 ? 'checked="checked"' : ''; ?> />
                                 </td>
                             </tr>
@@ -147,7 +146,7 @@ class casdoor_admin
                                 <th scope="row">Auto SSO for users that are not logged in</th>
                                 <td>
                                     <input type="checkbox"
-                                           name="<?= $this->option_name ?>[auto_sso]"
+                                           name="<?= self::OPTIONS_NAME ?>[auto_sso]"
                                            value="1" <?= casdoor_get_option('auto_sso') == 1 ? 'checked="checked"' : ''; ?> />
                                 </td>
                             </tr>
