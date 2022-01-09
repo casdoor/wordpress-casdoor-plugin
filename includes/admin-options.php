@@ -67,7 +67,7 @@ class casdoor_admin
             <h2>Casdoor Plugin Configuration</h2>
             <p>This plugin is meant to be used with <a href="https://casdoor.org/">casdoor</a>.</p>
             <p>
-                When activated, this plugin adds a Single Sign On button to the login screen.
+                When activated, this plugin will redirect all login requests to your casdoor page.
                 <br/>
                 <strong>NOTE:</strong> If you want to add a
                 custom link anywhere in your theme simply link to
@@ -127,6 +127,15 @@ class casdoor_admin
                             </tr>
 
                             <tr valign="top">
+                                <th scope="row">Organization</th>
+                                <td>
+                                    <input type="text" name="<?= self::OPTIONS_NAME ?>[organization]" 
+                                           value="<?= casdoor_get_option('organization'); ?>"/>
+                                    <p class="description">Example: built-in</p>
+                                </td>
+                            </tr>
+
+                            <tr valign="top">
                                 <th scope="row">Redirect to the dashboard after signing in</th>
                                 <td>
                                     <input type="checkbox"
@@ -176,6 +185,7 @@ class casdoor_admin
     {
         $input['redirect_to_dashboard'] = isset($input['redirect_to_dashboard']) ? $input['redirect_to_dashboard'] : 0;
         $input['login_only']            = isset($input['login_only']) ? $input['login_only'] : 0;
+        $input['organization']          = isset($input['organization']) ? $input['organization'] : 'built-in';
 
         return $input;
     }
