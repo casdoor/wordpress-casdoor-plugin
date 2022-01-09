@@ -13,10 +13,12 @@ class Casdoor
     public static $_instance = null;
 
     protected $default_settings = [
+        'active'               => 0,
         'client_id'            => '',
         'client_secret'        => '',
         'frontend'             => '',
         'backend'              => '',
+        'organization'         => 'built-in',
         'server_oauth_trigger' => 'oauth',
         'server_auth_endpoint' => 'authorize',
         'server_token_endpont' => 'token',
@@ -76,7 +78,8 @@ class Casdoor
     public function custom_login()
     {
         global $pagenow;
-        if ('wp-login.php' == $pagenow) {
+        $activated = absint(casdoor_get_option('active'));
+        if ('wp-login.php' == $pagenow && !is_user_logged_in() && $activated) {
             $url = get_casdoor_login_url();
             wp_redirect($url);
             exit();
@@ -94,7 +97,12 @@ class Casdoor
      */
     public function change_login_url($login_url, $redirect, $force_reauth): string
     {
-        return get_casdoor_login_url($redirect);
+        $activated = absint(casdoor_get_option('active'));
+        if ($activated) {
+            return get_casdoor_login_url($redirect);
+        } else {
+            return $login_url;
+        }
     }
 
     /**
