@@ -26,6 +26,8 @@ class Casdoor
     public function __construct()
     {
         add_action('init', [__CLASS__, 'includes']);
+        add_action('init', [__CLASS__, 'custom_login']);
+        add_filter('login_url', [__CLASS__, 'change_login_url'], 10, 3);
     }
 
     /**
@@ -64,6 +66,35 @@ class Casdoor
             update_option('casdoor_options', $this->default_settings);
         }
         $this->install();
+    }
+
+    /**
+     * When wp-login.php was visited, redirect to the login page of casdoor
+     *
+     * @return void
+     */
+    public function custom_login()
+    {
+        global $pagenow;
+        if ('wp-login.php' == $pagenow) {
+            $url = get_casdoor_login_url();
+            wp_redirect($url);
+            exit();
+        }
+    }
+
+    /**
+     * Filters the login URL
+     *
+     * @param string $login_url
+     * @param string $redirect
+     * @param bool   $force_reauth
+     *
+     * @return string
+     */
+    public function change_login_url($login_url, $redirect, $force_reauth): string
+    {
+        return get_casdoor_login_url($redirect);
     }
 
     /**
