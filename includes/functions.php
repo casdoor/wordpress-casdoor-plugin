@@ -48,6 +48,27 @@ function casdoor_set_options(string $key, $value)
 }
 
 /**
+ * Get the login url of casdoor
+ *
+ * @param string $redirect
+ *
+ * @return string
+ */
+function get_casdoor_login_url(string $redirect = ''): string
+{
+    $params = [
+        'oauth'         => 'authorize',
+        'response_type' => 'code',
+        'client_id'     => casdoor_get_option('client_id'),
+        'client_secret' => casdoor_get_option('client_secret'),
+        'redirect_uri'  => site_url('?auth=casdoor'),
+        'state'         => urlencode($redirect)
+    ];
+    $params = http_build_query($params);
+    return casdoor_get_option('frontend') . '/login/oauth/authorize?' . $params;
+}
+
+/**
  * Add login button for casdoor on the login form.
  *
  * @link https://codex.wordpress.org/Plugin_API/Action_Reference/login_form
@@ -62,7 +83,7 @@ function casdoor_login_form_button()
 }
 // Fires following the ‘Password’ field in the login form.
 // It can be used to customize the built-in WordPress login form. Use in conjunction with ‘login_head‘ (for validation).
-add_action('login_form', 'casdoor_login_form_button');
+// add_action('login_form', 'casdoor_login_form_button');
 
 /**
  * Login Button Shortcode
