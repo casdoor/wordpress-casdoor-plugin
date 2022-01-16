@@ -16,7 +16,6 @@ class Casdoor
         'active'               => 0,
         'client_id'            => '',
         'client_secret'        => '',
-        'frontend'             => '',
         'backend'              => '',
         'organization'         => 'built-in',
         'server_oauth_trigger' => 'oauth',
