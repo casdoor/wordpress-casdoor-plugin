@@ -19,6 +19,8 @@ class Casdoor
         'frontend'             => '',
         'backend'              => '',
         'organization'         => 'built-in',
+        'ip_range_check'       => 0,
+        'ip_ranges'            => '',
         'server_oauth_trigger' => 'oauth',
         'server_auth_endpoint' => 'authorize',
         'server_token_endpont' => 'token',

@@ -145,6 +145,24 @@ class casdoor_admin
                             </tr>
 
                             <tr valign="top">
+                                <th scope="row">Enable on IP Ranges</th>
+                                <td>
+                                    <input type="checkbox"
+                                    name="<?= self::OPTIONS_NAME ?>[ip_range_check]"
+                                    value="1" <?= casdoor_get_option('ip_range_check') == 1 ? 'checked="checked"' : ''; ?> />
+                                </td>
+                            </tr>
+
+                            <tr valign="top">
+                                <th scope="row">IP Ranges</th>
+                                <td>
+                                    <textarea cols="40" name="<?= self::OPTIONS_NAME ?>[ip_ranges]">
+                                            <?= esc_textarea(casdoor_get_option('ip_ranges')); ?></textarea>
+                                    <p class="description">Only one range per line! Range format should be as: <code>xx.xx.xx.xx - yy.yy.yy.yy</code> (spaces will be trimmed)</p>
+                                </td>
+                            </tr>
+
+                            <tr valign="top">
                                 <th scope="row">Redirect to the dashboard after signing in</th>
                                 <td>
                                     <input type="checkbox"

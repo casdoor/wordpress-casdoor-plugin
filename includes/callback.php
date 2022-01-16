@@ -5,6 +5,8 @@
  */
 defined('ABSPATH') or die('No script kiddies please!');
 
+require_once(CASDOOR_PLUGIN_DIR . '/includes/Ip_Check.php');
+
 // Redirect the user back to the home page if logged in.
 if (is_user_logged_in()) {
     wp_redirect(home_url());
@@ -83,6 +85,15 @@ if (!empty($_GET['code'])) {
             exit;
         }
 
+        // ip check
+        Ip_Check::init();
+
+        // If the code runs to this point, this means the value of active option is 1, but now it becomes 0, which represents this ip address is not allowed.
+        if (casdoor_get_option('active') === 0) {
+            wp_safe_redirect(wp_login_url() . '?ip_not_allowed');
+            exit;
+        }
+
         // Does not have an account... Register and then log the user in
         $random_password = wp_generate_password($length = 12, $include_standard_special_chars = false);
         if (empty($info->email)) {
@@ -137,6 +148,18 @@ if (!empty($_GET['code'])) {
         wp_clear_auth_cookie();
         wp_set_current_user($user->ID);
         wp_set_auth_cookie($user->ID);
+
+        // ip check
+        Ip_Check::init();
+
+        // If the code runs to this point, this means the value of active option is 1, but now it becomes 0. This represents that the user's ip address is not allowed, and he is not the admin of system.
+        if (casdoor_get_option('active') === 0) {
+            $user_id = get_current_user_id();
+ 
+            wp_logout();
+            wp_safe_redirect(home_url() . '?ip_not_allowed');
+            exit;
+        }
 
         if (is_user_logged_in()) {
             wp_safe_redirect($user_redirect);
