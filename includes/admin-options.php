@@ -92,6 +92,15 @@ class casdoor_admin
                     <form method="post" action="options.php">
                         <?php settings_fields('casdoor_options'); ?>
                         <table class="form-table">
+                        <tr valign="top">
+                                <th scope="row">Activate Casdoor</th>
+                                <td>
+                                    <input type="checkbox"
+                                        name="<?= self::OPTIONS_NAME ?>[active]"
+                                        value="1" <?= casdoor_get_option('active') == 1 ? 'checked="checked"' : ''; ?> />
+                                </td>
+                            </tr>
+
                             <tr valign="top">
                                 <th scope="row">Client ID</th>
                                 <td>
@@ -131,7 +140,7 @@ class casdoor_admin
                                 <td>
                                     <input type="text" name="<?= self::OPTIONS_NAME ?>[organization]" 
                                            value="<?= casdoor_get_option('organization'); ?>"/>
-                                    <p class="description">Example: built-in</p>
+                                    <p class="description">Example/Default: built-in</p>
                                 </td>
                             </tr>
 
