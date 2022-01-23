@@ -34,6 +34,8 @@ function casdoor_register_files()
     wp_register_script('casdoor_admin', plugins_url('/assets/js/admin.js', __FILE__));
 }
 
-add_action('admin_menu', [new Casdoor(), 'plugin_init']);
-register_activation_hook(__FILE__, [new Casdoor(), 'setup']);
-register_activation_hook(__FILE__, [new Casdoor(), 'upgrade']);
+$casdoor = new Casdoor();
+add_action('admin_menu', [$casdoor, 'plugin_init']);
+add_action('wp_logout', [$casdoor, 'logout']);
+register_activation_hook(__FILE__, [$casdoor, 'setup']);
+register_activation_hook(__FILE__, [$casdoor, 'upgrade']);
