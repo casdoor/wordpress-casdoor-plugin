@@ -8,7 +8,6 @@ function defaults()
     return [
         'client_id'             => '',
         'client_secret'         => '',
-        'frontend'              => '',
         'backend'               => '',
         'redirect_to_dashboard' => 0,
         'login_only'            => 0,
@@ -65,7 +64,7 @@ function get_casdoor_login_url(string $redirect = ''): string
         'state'         => urlencode($redirect)
     ];
     $params = http_build_query($params);
-    return casdoor_get_option('frontend') . '/login/oauth/authorize?' . $params;
+    return casdoor_get_option('backend') . '/login/oauth/authorize?' . $params;
 }
 
 /**

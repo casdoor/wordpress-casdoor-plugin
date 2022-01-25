@@ -118,15 +118,6 @@ class casdoor_admin
                             </tr>
 
                             <tr valign="top">
-                                <th scope="row">Frontend URL</th>
-                                <td>
-                                    <input type="text" name="<?= self::OPTIONS_NAME ?>[frontend]" min="10"
-                                           value="<?= casdoor_get_option('frontend'); ?>"/>
-                                    <p class="description">Example: https://your-casdoor-frontend.com</p>
-                                </td>
-                            </tr>
-
-                            <tr valign="top">
                                 <th scope="row">Backend URL</th>
                                 <td>
                                     <input type="text" name="<?= self::OPTIONS_NAME ?>[backend]" min="10"

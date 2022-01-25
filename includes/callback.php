@@ -30,7 +30,7 @@ if (!isset($_GET['code'])) {
         'state'         => urlencode($user_redirect)
     ];
     $params = http_build_query($params);
-    wp_redirect(casdoor_get_option('frontend') . '/login/oauth/authorize?' . $params);
+    wp_redirect(casdoor_get_option('backend') . '/login/oauth/authorize?' . $params);
     exit;
 }
 

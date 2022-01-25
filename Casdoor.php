@@ -16,7 +16,6 @@ class Casdoor
         'active'               => 0,
         'client_id'            => '',
         'client_secret'        => '',
-        'frontend'             => '',
         'backend'              => '',
         'organization'         => 'built-in',
         'server_oauth_trigger' => 'oauth',
@@ -29,7 +28,6 @@ class Casdoor
     {
         add_action('init', [__CLASS__, 'includes']);
         add_action('init', [__CLASS__, 'custom_login']);
-        add_filter('login_url', [__CLASS__, 'change_login_url'], 10, 3);
     }
 
     /**
@@ -79,29 +77,19 @@ class Casdoor
     {
         global $pagenow;
         $activated = absint(casdoor_get_option('active'));
-        if ('wp-login.php' == $pagenow && !is_user_logged_in() && $activated) {
+        if ('wp-login.php' == $pagenow && $_GET['action'] != 'logout' && $activated) {
             $url = get_casdoor_login_url();
             wp_redirect($url);
             exit();
         }
     }
 
-    /**
-     * Filters the login URL
-     *
-     * @param string $login_url
-     * @param string $redirect
-     * @param bool   $force_reauth
-     *
-     * @return string
-     */
-    public function change_login_url($login_url, $redirect, $force_reauth): string
+    public function logout()
     {
-        $activated = absint(casdoor_get_option('active'));
-        if ($activated) {
-            return get_casdoor_login_url($redirect);
-        } else {
-            return $login_url;
+        $auto_sso = absint(casdoor_get_option('auto_sso'));
+        if (!$auto_sso) {
+            wp_redirect(home_url());
+            die();
         }
     }
 
