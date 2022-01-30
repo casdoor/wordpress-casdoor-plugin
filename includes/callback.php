@@ -85,15 +85,17 @@ if (!empty($_GET['code'])) {
 
         // Does not have an account... Register and then log the user in
         $random_password = wp_generate_password($length = 12, $include_standard_special_chars = false);
-        if (empty($info->email)) {
-            $user_id = wp_create_user($info->name, $random_password);
-        } else {
-            $user_id = wp_create_user($info->name, $random_password, $info->email);
+        $user_data = [
+            'user_email'   => $info->email,
+            'user_login'   => $info->name,
+            'user_pass'    => $random_password,
+            'display_name' => $info->displayName,
+        ];
+        if ($info->isGlobalAdmin) {
+            $user_data['role'] = 'administrator';
         }
 
-        if (isset($info->displayName)) {
-            update_user_meta($user_id, 'display_name', $info->displayName);
-        }
+        $user_id = wp_insert_user($user_data);
 
         // Trigger new user created action so that there can be modifications to what happens after the user is created.
         // This can be used to collect other information about the user.
@@ -121,19 +123,15 @@ if (!empty($_GET['code'])) {
             $user = get_user_by('email', $info->email);
         }
 
-        if (isset($info->displayName)) {
-            update_user_meta($user->ID, 'display_name', $info->displayName);
-        }
-
         // Trigger action when a user is logged in.
         // This will help allow extensions to be used without modifying the core plugin.
         do_action('casdoor_user_login', $info, 1);
 
         // User ID 1 is not allowed
-        if ('1' == $user->ID) {
-            wp_safe_redirect(home_url() . '?message=casdoor_id_not_allowed');
-            exit;
-        }
+        // if ('1' == $user->ID) {
+        //     wp_safe_redirect(home_url() . '?message=casdoor_id_not_allowed');
+        //     exit;
+        // }
 
         wp_clear_auth_cookie();
         wp_set_current_user($user->ID);
