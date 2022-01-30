@@ -94,6 +94,20 @@ class Casdoor
     }
 
     /**
+     * Loads the plugin styles and scripts into scope
+     *
+     * @return void
+     */
+    public function wp_enqueue()
+    {
+        // Registers the script if $src provided (does NOT overwrite), and enqueues it.
+        wp_enqueue_script('jquery-ui-accordion');
+        // Registers the style if source provided (does NOT overwrite) and enqueues.
+        wp_enqueue_style('casdoor_admin');
+        wp_enqueue_script('casdoor_admin');
+    }
+
+    /**
      * Plugin Initializer
      */
     public function plugin_init()

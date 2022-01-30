@@ -79,7 +79,7 @@ if (!empty($_GET['code'])) {
 
     if (!$user_id && (empty($info->email) || email_exists($info->email) == false)) {
         if (casdoor_get_option('login_only') == 1) {
-            wp_safe_redirect(wp_login_url() . '?casdoor_login_only');
+            wp_safe_redirect(home_url() . '?message=casdoor_login_only');
             exit;
         }
 
@@ -130,8 +130,9 @@ if (!empty($_GET['code'])) {
         do_action('casdoor_user_login', $info, 1);
 
         // User ID 1 is not allowed
-        if ('1' === $user->ID) {
-            wp_die('For security reasons, this user can not use Single Sign On');
+        if ('1' == $user->ID) {
+            wp_safe_redirect(home_url() . '?message=casdoor_id_not_allowed');
+            exit;
         }
 
         wp_clear_auth_cookie();
@@ -144,5 +145,6 @@ if (!empty($_GET['code'])) {
         }
     }
 
-    exit('Casdoor Single Sign On Failed. User mismatch or clash with existing data and SSO can not complete.');
+    wp_safe_redirect(home_url() . '?message=casdoor_sso_failed');
+    exit;
 }

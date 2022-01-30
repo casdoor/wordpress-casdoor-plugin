@@ -1363,3 +1363,22 @@ table td input[type="text"] {
     font-weight: bold;
     color: #FFF;
 }
+
+.alertbar { 
+    background-color: #ff0000; 
+    color: #FFFFFF; 
+    display: block; 
+    line-height: 45px;
+    height: 50px; 
+    position: relative; 
+    text-align: center; 
+    text-decoration: none; 
+    top: 0px; 
+    width: 100%;
+    z-index: 100;
+}
+
+.alertbar a { 
+    border: 1px solid white bottom;
+    color: white;
+}

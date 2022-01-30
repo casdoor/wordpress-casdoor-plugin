@@ -6,12 +6,7 @@
  * Description: Creates the ability to login using Single Sign On from casdoor.
  * Author: casdoor
  * Author URI: https://github.com/casdoor/
- * License: GPL2
- *
- * This program is GLP but; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
+ * License: Apache
  */
 
  // ABSPATH prevent public user to directly access your .php files through URL.
@@ -36,6 +31,7 @@ function casdoor_register_files()
 
 $casdoor = new Casdoor();
 add_action('admin_menu', [$casdoor, 'plugin_init']);
+add_action('wp_enqueue_scripts', [$casdoor, 'wp_enqueue']);
 add_action('wp_logout', [$casdoor, 'logout']);
 register_activation_hook(__FILE__, [$casdoor, 'setup']);
 register_activation_hook(__FILE__, [$casdoor, 'upgrade']);
