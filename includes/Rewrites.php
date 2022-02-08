@@ -22,6 +22,7 @@ class Rewrites
     {
         $qvars[] = 'auth';
         $qvars[] = 'code';
+        $qvars[] = 'message';
         return $qvars;
     }
 
@@ -53,6 +54,13 @@ class Rewrites
                     exit;
                 }
             }
+        }
+
+        global $pagenow;
+        $message = $wp_query->get('message');
+        if ($pagenow == 'index.php' && isset($message)) {
+            $options['auto_sso'] = 0;
+            require_once(CASDOOR_PLUGIN_DIR . '/templates/error-msg.php');
         }
 
         // Auto SSO for users that are not logged in.

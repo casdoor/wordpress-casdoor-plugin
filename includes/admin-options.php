@@ -40,28 +40,12 @@ class casdoor_admin
     }
 
     /**
-     * Loads the plugin styles and scripts into scope
-     *
-     * @return void
-     */
-    public function admin_head()
-    {
-        // Registers the script if $src provided (does NOT overwrite), and enqueues it.
-        wp_enqueue_script('jquery-ui-accordion');
-        // Registers the style if source provided (does NOT overwrite) and enqueues.
-        wp_enqueue_style('casdoor_admin');
-        wp_enqueue_script('casdoor_admin');
-    }
-
-    /**
      * [options_do_page description]
      *
      * @return [type] [description]
      */
     public function options_do_page()
     {
-        // loads the plugin styles and scripts into scope
-        $this->admin_head();
         ?>
         <div class="wrap">
             <h2>Casdoor Plugin Configuration</h2>

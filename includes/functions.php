@@ -120,17 +120,3 @@ function casdoor_get_user_redirect_url(): string
 
     return $user_redirect;
 }
-
-/**
- * Add message to the login/out page with login only
- */
-function casdoor_login_only_message(string $message): string
-{
-    if (empty($message) && isset($_GET['casdoor_login_only'])) {
-        return '<p><strong>' . apply_filters('casdoor_login_only_msg', 'You need to have an account to use Casdoor Single Sign On') . '</strong></p>';
-    } else {
-        return $message;
-    }
-}
-
-add_filter('login_message', 'casdoor_login_only_message');
