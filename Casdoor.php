@@ -73,7 +73,7 @@ class Casdoor
      *
      * @return void
      */
-    public function custom_login()
+    public static function custom_login()
     {
         global $pagenow;
         $activated = absint(casdoor_get_option('active'));
