@@ -14,7 +14,7 @@ function defaults()
     ];
 }
 
-function get_options()
+function casdoor_get_options_internal()
 {
     $options = get_option(casdoor_admin::OPTIONS_NAME, []);
     if (!is_array($options)) {
@@ -33,7 +33,7 @@ function get_options()
  */
 function casdoor_get_option(string $option_name)
 {
-    $options = get_options();
+    $options = casdoor_get_options_internal();
     if (!empty($v = $options[$option_name])) {
         return $v;
     }
@@ -41,7 +41,7 @@ function casdoor_get_option(string $option_name)
 
 function casdoor_set_options(string $key, $value)
 {
-    $options = get_options();
+    $options = casdoor_get_options_internal();
     $options[$key] = $value;
     update_option(casdoor_admin::OPTIONS_NAME, $options);
 }
