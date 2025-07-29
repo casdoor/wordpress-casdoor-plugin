@@ -73,13 +73,17 @@ class Casdoor
      *
      * @return void
      */
-    public static function custom_login()
-    {
+    public static function custom_login() {
         global $pagenow;
-        $activated = absint(casdoor_get_option('active'));
-        if ('wp-login.php' == $pagenow && $_GET['action'] != 'logout' && $activated) {
+        $activated = absint( casdoor_get_option( 'active' ) );
+        $action = filter_input( INPUT_GET, 'action', FILTER_SANITIZE_STRING ) ?? '';
+        if (
+            'wp-login.php' === $pagenow
+            && 'logout'     !== $action
+            && $activated
+        ) {
             $url = get_casdoor_login_url();
-            wp_redirect($url);
+            wp_redirect( $url );
             exit();
         }
     }
