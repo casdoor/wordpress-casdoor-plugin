@@ -22,6 +22,13 @@ Then click on this new section and set up your casdoor plugin, this mainly invol
 
 After successfully setting up this plugin, all login requests sent to login.php will be redirected to casdoor application.
 
+### Fallback to Native WordPress Login
+If you have users who only exist in WordPress (not in Casdoor), they can access the native WordPress login by:
+1. Visiting the Casdoor login page and clicking the "Use WordPress Login" link at the bottom
+2. Directly accessing `wp-login.php?use_native_login=1`
+
+This provides a fallback mechanism for WordPress-only users while keeping Casdoor SSO as the primary login method.
+
 ## workflow
 After the username/email, password you entered is verified by casdoor, there may be two situations. Casdoor will try to find the corresponding user, if the user exists in wordpress, casdoor will login as this user, otherwise it will insert the user's information to the wp_users table of wordpress, then login as this user.
 
