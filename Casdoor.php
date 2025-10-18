@@ -77,10 +77,12 @@ class Casdoor
         global $pagenow;
         $activated = absint( casdoor_get_option( 'active' ) );
         $action = filter_input( INPUT_GET, 'action', FILTER_SANITIZE_STRING ) ?? '';
+        $use_native_login = filter_input( INPUT_GET, 'use_native_login', FILTER_SANITIZE_STRING ) ?? '';
         if (
             'wp-login.php' === $pagenow
             && 'logout'     !== $action
             && $activated
+            && $use_native_login !== '1'
         ) {
             $url = get_casdoor_login_url();
             wp_redirect( $url );

@@ -120,3 +120,28 @@ function casdoor_get_user_redirect_url(): string
 
     return $user_redirect;
 }
+
+/**
+ * Add a link to use native WordPress login when Casdoor SSO is active
+ * This provides a fallback for WordPress-only users
+ *
+ * @return void
+ */
+function casdoor_add_native_login_link()
+{
+    $activated = absint(casdoor_get_option('active'));
+    if ($activated && !isset($_GET['use_native_login'])) {
+        $native_login_url = wp_login_url() . '?use_native_login=1';
+        if (!empty($_GET['redirect_to'])) {
+            $native_login_url .= '&redirect_to=' . urlencode($_GET['redirect_to']);
+        }
+        ?>
+        <p style="text-align: center; margin-top: 1em;">
+            <a href="<?php echo esc_url($native_login_url); ?>">
+                <?php _e('Use WordPress Login', 'casdoor'); ?>
+            </a>
+        </p>
+        <?php
+    }
+}
+add_action('login_footer', 'casdoor_add_native_login_link');
