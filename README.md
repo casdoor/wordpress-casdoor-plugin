@@ -1,4 +1,9 @@
 # wordpress-casdoor-plugin
+
+[![Tests](https://github.com/casdoor/wordpress-casdoor-plugin/actions/workflows/test.yml/badge.svg)](https://github.com/casdoor/wordpress-casdoor-plugin/actions/workflows/test.yml)
+[![Semantic Release](https://github.com/casdoor/wordpress-casdoor-plugin/actions/workflows/release.yml/badge.svg)](https://github.com/casdoor/wordpress-casdoor-plugin/actions/workflows/release.yml)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
+
 This plugin is designed and developed for use with [casdoor](https://github.com/casbin/casdoor). After activating the plugin, it will replace standard WordPress login forms with one powered by casdoor. 
 
 ## Installation
