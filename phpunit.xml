@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/9.5/phpunit.xsd"
+         bootstrap="tests/bootstrap.php"
+         colors="true"
+         beStrictAboutOutputDuringTests="true"
+         beStrictAboutTestsThatDoNotTestAnything="true"
+         verbose="true">
+    <testsuites>
+        <testsuite name="WordPress Casdoor Plugin Test Suite">
+            <directory>tests</directory>
+        </testsuite>
+    </testsuites>
+    <coverage processUncoveredFiles="true">
+        <include>
+            <directory suffix=".php">./</directory>
+        </include>
+        <exclude>
+            <directory>./tests</directory>
+            <directory>./vendor</directory>
+            <directory>./assets</directory>
+            <directory>./templates</directory>
+            <file>./includes/callback.php</file>
+            <file>./wordpress-casdoor-plugin.php</file>
+        </exclude>
+    </coverage>
+    <php>
+        <const name="WP_TESTS_PHPUNIT_POLYFILLS_PATH" value="vendor/yoast/phpunit-polyfills"/>
+    </php>
+</phpunit>

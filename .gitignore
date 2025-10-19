@@ -24,3 +24,15 @@ node_modules/
 
 .idea/
 *.iml
+
+# Composer dependencies
+vendor/
+composer.lock
+
+# PHPUnit test artifacts
+.phpunit.result.cache
+coverage/
+coverage.xml
+
+# NPM dependencies and lock files
+package-lock.json
