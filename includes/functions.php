@@ -11,6 +11,8 @@ function defaults()
         'backend'               => '',
         'redirect_to_dashboard' => 0,
         'login_only'            => 0,
+        'auto_sso'              => 0, // added to avoid undefined key warnings
+        'active'                => 0, // optional: keeps behavior consistent
     ];
 }
 
@@ -29,14 +31,13 @@ function casdoor_get_options_internal()
  *
  * @param string $option_name
  *
- * @return void|string
+ * @return mixed|null
  */
 function casdoor_get_option(string $option_name)
 {
     $options = casdoor_get_options_internal();
-    if (!empty($v = $options[$option_name])) {
-        return $v;
-    }
+    // Safe access; avoid undefined index warnings and preserve 0 values
+    return $options[$option_name] ?? null;
 }
 
 function casdoor_set_options(string $key, $value)
@@ -49,19 +50,19 @@ function casdoor_set_options(string $key, $value)
 /**
  * Get the login url of casdoor
  *
- * @param string $redirect
+ * @param string $redirect Full or relative URL to return to (goes into OAuth state)
  *
  * @return string
  */
 function get_casdoor_login_url(string $redirect = ''): string
 {
+    // IMPORTANT: Do NOT include client_secret in the browser-facing authorize URL.
     $params = [
         'oauth'         => 'authorize',
         'response_type' => 'code',
         'client_id'     => casdoor_get_option('client_id'),
-        'client_secret' => casdoor_get_option('client_secret'),
         'redirect_uri'  => site_url('?auth=casdoor'),
-        'state'         => urlencode($redirect)
+        'state'         => urlencode($redirect),
     ];
     $params = http_build_query($params);
     return casdoor_get_option('backend') . '/login/oauth/authorize?' . $params;
@@ -115,8 +116,88 @@ function casdoor_get_user_redirect_url(): string
 {
     $options           = get_option('casdoor_options');
     // Retrieves the URL to the user’s dashboard.
-    $user_redirect_set = $options['redirect_to_dashboard'] == '1' ? get_dashboard_url() : site_url();
+    $user_redirect_set = !empty($options['redirect_to_dashboard']) && $options['redirect_to_dashboard'] == '1'
+        ? get_dashboard_url()
+        : site_url();
     $user_redirect     = apply_filters('casdoor_user_redirect_url', $user_redirect_set);
 
     return $user_redirect;
+}
+
+/**
+ * Treat relative URLs as same-origin. For absolute URLs, enforce same host.
+ */
+function casdoor_same_origin(string $url): bool
+{
+    if ($url === '') return false;
+    $t = wp_parse_url($url);
+    if (empty($t['host'])) {
+        // Relative => same origin
+        return true;
+    }
+    $s = wp_parse_url(home_url());
+    if (empty($s['host'])) return false;
+    return strtolower($t['host']) === strtolower($s['host']);
+}
+
+/**
+ * Resolve nested redirect chains commonly used by WordPress/WooCommerce.
+ * Unwraps up to 3 levels: redirect_to, redirect, wc-redirect, return_to.
+ */
+function casdoor_resolve_redirect_chain(string $url): string
+{
+    $current = $url;
+    $keys = ['redirect_to', 'redirect', 'wc-redirect', 'return_to'];
+
+    for ($i = 0; $i < 3; $i++) {
+        if ($current === '') break;
+        $parsed = wp_parse_url($current);
+        if (empty($parsed['query'])) break;
+
+        parse_str($parsed['query'], $q);
+        $candidate = '';
+        foreach ($keys as $k) {
+            if (!empty($q[$k])) { $candidate = (string)$q[$k]; break; }
+        }
+        if ($candidate === '' || !casdoor_same_origin($candidate)) break;
+        $current = $candidate;
+    }
+    return $current;
+}
+
+/**
+ * Compute the intended post-login target from the current request.
+ * - Prefer redirect_to (unwraps nested), otherwise safe referer, otherwise admin/home.
+ * - Returns a sanitized URL (may be relative).
+ */
+function casdoor_get_login_target_from_request(): string
+{
+    $target = '';
+
+    if (!empty($_REQUEST['redirect_to'])) {
+        $resolved = casdoor_resolve_redirect_chain((string) $_REQUEST['redirect_to']);
+        if ($resolved !== '' && casdoor_same_origin($resolved)) {
+            $target = wp_sanitize_redirect($resolved);
+        }
+    }
+
+    if ($target === '') {
+        $ref = wp_get_referer();
+        if (!empty($ref)
+            && casdoor_same_origin($ref)
+            && strpos($ref, 'wp-login.php') === false
+            && strpos($ref, '?auth=casdoor') === false) {
+            $target = wp_sanitize_redirect($ref);
+        }
+    }
+
+    if ($target === '') {
+        $fallback = admin_url();
+        if (!casdoor_same_origin($fallback)) {
+            $fallback = home_url('/');
+        }
+        $target = wp_sanitize_redirect($fallback);
+    }
+
+    return $target;
 }
