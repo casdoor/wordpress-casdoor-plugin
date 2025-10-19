@@ -25,6 +25,38 @@ After successfully setting up this plugin, all login requests sent to login.php 
 ## workflow
 After the username/email, password you entered is verified by casdoor, there may be two situations. Casdoor will try to find the corresponding user, if the user exists in wordpress, casdoor will login as this user, otherwise it will insert the user's information to the wp_users table of wordpress, then login as this user.
 
+## Development
+
+### Running Tests
+
+This plugin uses PHPUnit for unit testing. To run the tests:
+
+1. Install dependencies:
+   ```bash
+   composer install
+   ```
+
+2. Run the test suite:
+   ```bash
+   composer test
+   # or directly:
+   vendor/bin/phpunit
+   ```
+
+3. Run tests with coverage:
+   ```bash
+   composer test:coverage
+   ```
+
+### Continuous Integration
+
+The project uses GitHub Actions for CI/CD:
+
+- **Tests**: Automatically runs on all pull requests and pushes to main/master branches
+- **Semantic Release**: Automatically creates releases when PRs are merged to main/master
+
+The test suite runs against multiple PHP versions (7.4, 8.0, 8.1, 8.2, 8.3) to ensure compatibility.
+
 ## TODOS
 - Integrate `php-casdoor-sdk`
 - Publish this plugin to wordpress

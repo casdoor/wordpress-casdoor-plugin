@@ -1,0 +1,30 @@
+{
+  "name": "wordpress-casdoor-plugin",
+  "version": "1.0.0",
+  "description": "WordPress plugin for Casdoor SSO integration",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/casdoor/wordpress-casdoor-plugin.git"
+  },
+  "keywords": [
+    "wordpress",
+    "casdoor",
+    "sso",
+    "authentication",
+    "oauth"
+  ],
+  "author": "Casdoor",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/casdoor/wordpress-casdoor-plugin/issues"
+  },
+  "homepage": "https://github.com/casdoor/wordpress-casdoor-plugin#readme",
+  "devDependencies": {
+    "@semantic-release/changelog": "^6.0.3",
+    "@semantic-release/commit-analyzer": "^11.1.0",
+    "@semantic-release/git": "^10.0.1",
+    "@semantic-release/github": "^9.2.6",
+    "@semantic-release/release-notes-generator": "^12.1.0",
+    "semantic-release": "^23.0.0"
+  }
+}
