@@ -11,23 +11,29 @@ if (is_user_logged_in()) {
     exit;
 }
 
-// Grab a copy of the options and set the redirect location.
+// Default redirect from settings/filter
 $user_redirect = casdoor_get_user_redirect_url();
 
-// Check for custom redirect
-if (!empty($_GET['redirect_uri'])) {
-    $user_redirect = esc_url($_GET['redirect_uri']);
+// Allow redirect_to override (and nested chains), or legacy redirect_uri if present.
+if (!empty($_GET['redirect_to'])) {
+    $resolved = casdoor_resolve_redirect_chain((string) $_GET['redirect_to']);
+    if ($resolved !== '' && casdoor_same_origin($resolved)) {
+        $user_redirect = wp_sanitize_redirect($resolved);
+    }
+} elseif (!empty($_GET['redirect_uri'])) {
+    // Back-compat: not recommended name, but preserve behavior
+    $user_redirect = esc_url_raw((string) $_GET['redirect_uri']);
 }
 
-// Authenticate Check and Redirect
+// Authenticate Check and Redirect (first leg)
 if (!isset($_GET['code'])) {
+    // NOTE: client_secret must NOT be in the front-channel authorize URL
     $params = [
         'oauth'         => 'authorize',
         'response_type' => 'code',
         'client_id'     => casdoor_get_option('client_id'),
-        'client_secret' => casdoor_get_option('client_secret'),
         'redirect_uri'  => site_url('?auth=casdoor'),
-        'state'         => urlencode($user_redirect)
+        'state'         => urlencode($user_redirect),
     ];
     $params = http_build_query($params);
     wp_redirect(casdoor_get_option('backend') . '/login/oauth/authorize?' . $params);
@@ -38,7 +44,8 @@ if (!isset($_GET['code'])) {
 if (!empty($_GET['code'])) {
     // If the state is present, let's redirect to that link.
     if (!empty($_GET['state'])) {
-        $user_redirect = sanitize_text_field($_GET['state']);
+        // Preserve full URL safely (allows relative/absolute same-origin)
+        $user_redirect = esc_url_raw((string) $_GET['state']);
     }
 
     $code       = sanitize_text_field($_GET['code']);
