@@ -20,6 +20,8 @@
             <directory>./vendor</directory>
             <directory>./assets</directory>
             <directory>./templates</directory>
+            <file>./includes/callback.php</file>
+            <file>./wordpress-casdoor-plugin.php</file>
         </exclude>
     </coverage>
     <php>
