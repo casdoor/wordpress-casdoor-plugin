@@ -1,3 +1,10 @@
+# [1.1.0](https://github.com/casdoor/wordpress-casdoor-plugin/compare/v1.0.0...v1.1.0) (2025-10-19)
+
+
+### Features
+
+* fix "Uncaught TypeError: $(...).accordion" error in the console ([#19](https://github.com/casdoor/wordpress-casdoor-plugin/issues/19)) ([22824af](https://github.com/casdoor/wordpress-casdoor-plugin/commit/22824af1cc5bc60445fea07089511ffc1d34b46b))
+
 # 1.0.0 (2025-10-19)
 
 
