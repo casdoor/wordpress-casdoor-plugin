@@ -157,7 +157,10 @@ function casdoor_resolve_redirect_chain(string $url): string
         parse_str($parsed['query'], $q);
         $candidate = '';
         foreach ($keys as $k) {
-            if (!empty($q[$k])) { $candidate = (string)$q[$k]; break; }
+            if (!empty($q[$k])) {
+                $candidate = (string)$q[$k];
+                break;
+            }
         }
         if ($candidate === '' || !casdoor_same_origin($candidate)) break;
         $current = $candidate;
