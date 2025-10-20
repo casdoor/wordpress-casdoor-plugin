@@ -22,7 +22,10 @@ if (!empty($_GET['redirect_to'])) {
     }
 } elseif (!empty($_GET['redirect_uri'])) {
     // Back-compat: not recommended name, but preserve behavior
-    $user_redirect = esc_url_raw((string) $_GET['redirect_uri']);
+    $resolved = esc_url_raw((string) $_GET['redirect_uri']);
+    if ($resolved !== '' && casdoor_same_origin($resolved)) {
+        $user_redirect = $resolved;
+    }
 }
 
 // Authenticate Check and Redirect (first leg)
