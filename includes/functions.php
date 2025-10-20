@@ -11,8 +11,8 @@ function defaults()
         'backend'               => '',
         'redirect_to_dashboard' => 0,
         'login_only'            => 0,
-        'auto_sso'              => 0, // added to avoid undefined key warnings
-        'active'                => 0, // optional: keeps behavior consistent
+        'auto_sso'              => 0, // If enabled (1), automatically attempt Single Sign-On (SSO) for users on login page load.
+        'active'                => 0, // If enabled (1), activates the Casdoor authentication plugin; if disabled (0), plugin is inactive.
     ];
 }
 
