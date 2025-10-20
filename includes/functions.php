@@ -196,7 +196,10 @@ function casdoor_get_login_target_from_request(): string
 
     if ($target === '') {
         $fallback = admin_url();
+        // In normal configurations, admin_url() should always be same-origin.
+        // If this is not the case, it may indicate a misconfiguration (e.g., site_url and home_url domains differ).
         if (!casdoor_same_origin($fallback)) {
+            error_log('[casdoor] Warning: admin_url() is not same-origin. Falling back to home_url("/"). This may indicate a configuration issue.');
             $fallback = home_url('/');
         }
         $target = wp_sanitize_redirect($fallback);
