@@ -1,6 +1,4 @@
 <?php
-
-// ABSPATH prevent public user to directly access your .php files through URL.
 defined('ABSPATH') or die('No script kiddies please!');
 
 /**
@@ -8,7 +6,7 @@ defined('ABSPATH') or die('No script kiddies please!');
  */
 class Casdoor
 {
-    public $version = '1.0.0';
+    public $version = '1.3.1';
 
     public static $_instance = null;
 
@@ -90,13 +88,74 @@ class Casdoor
         }
     }
 
+    /**
+     * WordPress logout hook handler.
+     * Performs RP-initiated logout at Casdoor and then returns the user here.
+     *
+     * @return void
+     */
     public function logout()
     {
-        $auto_sso = absint(casdoor_get_option('auto_sso'));
-        if (!$auto_sso) {
-            wp_redirect(home_url());
-            die();
+        // Where to return users after logout
+        $post_logout_redirect = home_url('/');
+
+        // If WP provided a redirect_to, validate and prefer it
+        if (!empty($_REQUEST['redirect_to'])) {
+            $maybe_redirect = esc_url_raw((string) $_REQUEST['redirect_to']);
+            $validated = wp_validate_redirect($maybe_redirect, $post_logout_redirect);
+            if (!empty($validated)) {
+                $post_logout_redirect = $validated;
+            }
         }
+
+        // Resolve Casdoor backend
+        $backend = trim((string) casdoor_get_option('backend'));
+        if ($backend === '') {
+            wp_redirect($post_logout_redirect);
+            exit;
+        }
+        $backend = rtrim($backend, '/');
+
+        // Retrieve access token stored at login (used as id_token_hint for Casdoor)
+        $cookie_name = 'casdoor_access_token';
+        $access_token = isset($_COOKIE[$cookie_name]) ? sanitize_text_field((string) $_COOKIE[$cookie_name]) : '';
+
+        // Clear the cookie locally regardless
+        $cookie_domain = parse_url(home_url(), PHP_URL_HOST);
+        $cookie_opts = [
+            'expires'  => time() - 3600,
+            'path'     => '/',
+            'domain'   => $cookie_domain ?: '',
+            'secure'   => is_ssl(),
+            'httponly' => true,
+            'samesite' => 'Lax',
+        ];
+        // setcookie options array is available on PHP >= 7.3
+        if (PHP_VERSION_ID >= 70300) {
+            setcookie($cookie_name, '', $cookie_opts);
+        } else {
+            // best-effort fallback without SameSite
+            setcookie($cookie_name, '', $cookie_opts['expires'], $cookie_opts['path'], $cookie_opts['domain'], $cookie_opts['secure'], $cookie_opts['httponly']);
+        }
+
+        // If we have a token, use RP-initiated logout with redirect
+        if (!empty($access_token)) {
+            $logout_endpoint = $backend . '/api/logout';
+            $logout_url = add_query_arg(
+                [
+                    // Casdoor expects an access token here
+                    'id_token_hint'            => $access_token,
+                    'post_logout_redirect_uri' => $post_logout_redirect,
+                ],
+                $logout_endpoint
+            );
+            wp_redirect($logout_url);
+            exit;
+        }
+
+        // Fallback: finish locally if no token is present
+        wp_redirect($post_logout_redirect);
+        exit;
     }
 
     /**
@@ -106,9 +165,7 @@ class Casdoor
      */
     public function wp_enqueue()
     {
-        // Registers the script if $src provided (does NOT overwrite), and enqueues it.
         wp_enqueue_script('jquery-ui-accordion');
-        // Registers the style if source provided (does NOT overwrite) and enqueues.
         wp_enqueue_style('casdoor_admin');
         wp_enqueue_script('casdoor_admin');
     }
