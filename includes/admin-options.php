@@ -67,7 +67,9 @@ class casdoor_admin
                                     href="https://github.com/casbin/casdoor" target="_blank">GitHub</a>)
                         </li>
                         <li>Create a new application and add following uri to callback URLs:
-                            <strong class="code"><?= site_url('?auth=casdoor'); ?></strong></li>
+                            <strong class="code"><?= site_url('?auth=casdoor'); ?></strong> and
+                            <strong class="code"><?= site_url; ?></strong>
+                        </li>
                         <li>Copy the Client ID and Client Secret in Step 2 below.</li>
                     </ol>
                 </div>
