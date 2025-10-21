@@ -82,7 +82,9 @@ class Casdoor
             && 'logout'     !== $action
             && $activated
         ) {
-            $url = get_casdoor_login_url();
+            // Preserve the intended destination (redirect_to chain or safe referer)
+            $redirect = casdoor_get_login_target_from_request();
+            $url = get_casdoor_login_url($redirect);
             wp_redirect( $url );
             exit();
         }
