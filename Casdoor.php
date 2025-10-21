@@ -6,7 +6,7 @@ defined('ABSPATH') or die('No script kiddies please!');
  */
 class Casdoor
 {
-    public $version = '1.3.1';
+    public $version = '1.3.0';
 
     public static $_instance = null;
 
