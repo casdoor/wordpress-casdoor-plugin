@@ -1,3 +1,10 @@
+# [1.2.0](https://github.com/casdoor/wordpress-casdoor-plugin/compare/v1.1.0...v1.2.0) (2025-10-21)
+
+
+### Features
+
+* update Casdoor login handling for redirect preservation and security ([#27](https://github.com/casdoor/wordpress-casdoor-plugin/issues/27)) ([ab8eb7d](https://github.com/casdoor/wordpress-casdoor-plugin/commit/ab8eb7dac38f05970a8369258d215dbe1b06047d))
+
 # [1.1.0](https://github.com/casdoor/wordpress-casdoor-plugin/compare/v1.0.0...v1.1.0) (2025-10-19)
 
 
