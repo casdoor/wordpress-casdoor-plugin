@@ -44,9 +44,11 @@ class CasdoorTest extends TestCase
     public function test_casdoor_version()
     {
         require_once dirname(__DIR__) . '/Casdoor.php';
-        
+
         $casdoor = new \Casdoor();
-        $this->assertEquals('1.0.0', $casdoor->version);
+
+        // Assert plugin version matches canonical plugin header value used in tests
+        $this->assertEquals(CASDOOR_PLUGIN_VERSION, $casdoor->version);
     }
 
     public function test_casdoor_singleton_instance()
