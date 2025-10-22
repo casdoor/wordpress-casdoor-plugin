@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Wordpress Casdoor Plugin
  * Plugin URI: https://github.com/casdoor/wordpress-casdoor-plugin
- * Version: 1.0.0
+ * Version: 1.3.0
  * Description: Creates the ability to login using Single Sign On from casdoor.
  * Author: casdoor
  * Author URI: https://github.com/casdoor/
@@ -14,6 +14,11 @@ defined('ABSPATH') or die('No script kiddies please!');
 
 if (!defined('CASDOOR_PLUGIN_DIR')) {
     define('CASDOOR_PLUGIN_DIR', trailingslashit(plugin_dir_path(__FILE__)));
+}
+
+// Make plugin version available as a constant (single source of truth)
+if (!defined('CASDOOR_PLUGIN_VERSION')) {
+    define('CASDOOR_PLUGIN_VERSION', '1.3.0');
 }
 
 // Require the main plugin class
