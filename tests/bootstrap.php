@@ -18,6 +18,12 @@ if (!defined('CASDOOR_PLUGIN_DIR')) {
     define('CASDOOR_PLUGIN_DIR', dirname(__DIR__) . '/');
 }
 
+// Ensure the canonical plugin version constant is available for tests.
+// Keep in sync with the plugin header Version set in wordpress-casdoor-plugin.php.
+if (!defined('CASDOOR_PLUGIN_VERSION')) {
+    define('CASDOOR_PLUGIN_VERSION', '1.3.0');
+}
+
 // Start Brain Monkey
 \Brain\Monkey\setUp();
 
