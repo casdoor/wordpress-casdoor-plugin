@@ -46,6 +46,10 @@ if (!empty($_GET['code'])) {
     $code       = sanitize_text_field($_GET['code']);
     $backend    = rtrim(casdoor_get_option('backend'), '/') . '/api/login/oauth/access_token';
 
+    // Keep default TLS verification disabled, with option to force verify
+    $opts_all  = get_option('casdoor_options', []);
+    $sslverify = !empty($opts_all['force_ssl_verify']) ? true : false;
+
     $response   = wp_remote_post($backend, [
         'method'      => 'POST',
         'timeout'     => 45,
@@ -61,8 +65,8 @@ if (!empty($_GET['code'])) {
             'redirect_uri'  => site_url('?auth=casdoor')
         ],
         'cookies'     => [],
-        // Keep default behavior: sslverify is false unless admin forces it on.
-        'sslverify'   => casdoor_sslverify(),
+        // Default remains false; admin can force verification via setting.
+        'sslverify'   => $sslverify
     ]);
 
     if (is_wp_error($response)) {
@@ -98,7 +102,7 @@ if (!empty($_GET['code'])) {
         }
     }
 
-    // Decode user info from JWT payload
+    // Decode user info from JWT payload (unchanged behavior)
     if ($access_token === '') {
         wp_die('Missing access token in Casdoor response.');
     }
