@@ -1,24 +1,13 @@
 <?php
-
-/**
- * This file is called when the auth param is found in the URL.
- */
 defined('ABSPATH') or die('No script kiddies please!');
 
-// Redirect the user back to the home page if logged in.
-if (is_user_logged_in()) {
-    wp_redirect(home_url());
-    exit;
-}
-
-// Default redirect from settings/filter
-$user_redirect = casdoor_get_user_redirect_url();
-
-// Allow redirect_to override (and nested chains), or legacy redirect_uri if present.
+// Determine desired post-login redirect target
+$user_redirect = home_url('/');
 if (!empty($_GET['redirect_to'])) {
-    $resolved = casdoor_resolve_redirect_chain((string) $_GET['redirect_to']);
-    if ($resolved !== '' && casdoor_same_origin($resolved)) {
-        $user_redirect = wp_sanitize_redirect($resolved);
+    $resolved = esc_url_raw((string) $_GET['redirect_to']);
+    $validated = wp_validate_redirect($resolved, $user_redirect);
+    if (!empty($validated)) {
+        $user_redirect = $validated;
     }
 } elseif (!empty($_GET['redirect_uri'])) {
     // Back-compat: not recommended name, but preserve behavior
@@ -28,31 +17,35 @@ if (!empty($_GET['redirect_to'])) {
     }
 }
 
-// Authenticate Check and Redirect (first leg)
+// First leg: send to authorize if no code yet
 if (!isset($_GET['code'])) {
-    // NOTE: client_secret must NOT be in the front-channel authorize URL
     $params = [
         'oauth'         => 'authorize',
         'response_type' => 'code',
         'client_id'     => casdoor_get_option('client_id'),
         'redirect_uri'  => site_url('?auth=casdoor'),
-        'state'         => urlencode($user_redirect),
+        // do NOT urlencode here; http_build_query handles encoding
+        'state'         => $user_redirect,
     ];
     $params = http_build_query($params);
     wp_redirect(casdoor_get_option('backend') . '/login/oauth/authorize?' . $params);
     exit;
 }
 
-// Handle the callback from the backend is there is one.
+// Handle callback with code
 if (!empty($_GET['code'])) {
-    // If the state is present, let's redirect to that link.
     if (!empty($_GET['state'])) {
-        // Preserve full URL safely (allows relative/absolute same-origin)
-        $user_redirect = esc_url_raw((string) $_GET['state']);
+        // Validate returned state to prevent open redirect
+        $state = (string) $_GET['state'];
+        $validated = wp_validate_redirect(esc_url_raw($state), home_url('/'));
+        if (!empty($validated)) {
+            $user_redirect = $validated;
+        }
     }
 
     $code       = sanitize_text_field($_GET['code']);
-    $backend    = casdoor_get_option('backend') . '/api/login/oauth/access_token';
+    $backend    = rtrim(casdoor_get_option('backend'), '/') . '/api/login/oauth/access_token';
+
     $response   = wp_remote_post($backend, [
         'method'      => 'POST',
         'timeout'     => 45,
@@ -68,7 +61,8 @@ if (!empty($_GET['code'])) {
             'redirect_uri'  => site_url('?auth=casdoor')
         ],
         'cookies'     => [],
-        'sslverify'   => false
+        // Keep default behavior: sslverify is false unless admin forces it on.
+        'sslverify'   => casdoor_sslverify(),
     ]);
 
     if (is_wp_error($response)) {
@@ -77,14 +71,39 @@ if (!empty($_GET['code'])) {
     }
 
     $tokens = json_decode(wp_remote_retrieve_body($response));
-
     if (isset($tokens->error)) {
         wp_die($tokens->error_description);
     }
 
-    $access_token = $tokens->access_token;
-    $info = json_decode(base64_decode(str_replace('_', '/', str_replace('-', '+', explode('.', $access_token)[1]))));
-    
+    // Access token is a JWT; Casdoor’s logout expects it as id_token_hint
+    $access_token = isset($tokens->access_token) ? (string) $tokens->access_token : '';
+
+    // Store access token in a secure, HttpOnly cookie for RP-initiated logout later
+    if ($access_token !== '') {
+        $cookie_name  = 'casdoor_access_token';
+        $cookie_domain = parse_url(home_url(), PHP_URL_HOST);
+        $cookie_opts = [
+            'expires'  => time() + DAY_IN_SECONDS,
+            'path'     => '/',
+            'domain'   => $cookie_domain ?: '',
+            'secure'   => is_ssl(),
+            'httponly' => true,
+            'samesite' => 'Lax',
+        ];
+        if (PHP_VERSION_ID >= 70300) {
+            setcookie($cookie_name, $access_token, $cookie_opts);
+        } else {
+            // best-effort fallback without SameSite
+            setcookie($cookie_name, $access_token, $cookie_opts['expires'], $cookie_opts['path'], $cookie_opts['domain'], $cookie_opts['secure'], $cookie_opts['httponly']);
+        }
+    }
+
+    // Decode user info from JWT payload
+    if ($access_token === '') {
+        wp_die('Missing access token in Casdoor response.');
+    }
+    $info = json_decode(base64_decode(strtr(explode('.', $access_token)[1], '-_', '+/')));
+
     $user_id = username_exists($info->name);
 
     if (!$user_id && (empty($info->email) || email_exists($info->email) == false)) {
@@ -93,7 +112,7 @@ if (!empty($_GET['code'])) {
             exit;
         }
 
-        // Does not have an account... Register and then log the user in
+        // Register and then log the user in
         $random_password = wp_generate_password($length = 12, $include_standard_special_chars = false);
         $user_data = [
             'user_email'   => $info->email,
@@ -101,58 +120,40 @@ if (!empty($_GET['code'])) {
             'user_pass'    => $random_password,
             'display_name' => $info->displayName,
         ];
-        if ($info->isGlobalAdmin) {
+        if (!empty($info->isGlobalAdmin) && $info->isGlobalAdmin) {
             $user_data['role'] = 'administrator';
         }
 
         $user_id = wp_insert_user($user_data);
+        if (is_wp_error($user_id)) {
+            wp_die($user_id->get_error_message());
+        }
 
-        // Trigger new user created action so that there can be modifications to what happens after the user is created.
-        // This can be used to collect other information about the user.
-        do_action('casdoor_user_created', $info, 1);
-
-        wp_clear_auth_cookie();
         wp_set_current_user($user_id);
         wp_set_auth_cookie($user_id);
-
-        if (is_user_logged_in()) {
-            wp_safe_redirect($user_redirect);
-            exit;
-        }
+        do_action('wp_login', $info->name, get_user_by('id', $user_id));
     } else {
-        // Already Registered... Log the User In using ID or Email
-        $random_password = __('User already exists.  Password inherited.');
-        // Get the user by name
-        $user            = get_user_by('login', $info->name);
-
-        /*
-         * Added just in case the user is not used but the email may be. If the user returns false from the user ID,
-         * we should check the user by email. This may be the case when the users are preregistered outside of OAuth
-         */
-        if (!$user) {
+        // Log existing user in
+        if (!$user_id) {
             $user = get_user_by('email', $info->email);
+            if ($user) {
+                $user_id = $user->ID;
+            }
         }
-
-        // Trigger action when a user is logged in.
-        // This will help allow extensions to be used without modifying the core plugin.
-        do_action('casdoor_user_login', $info, 1);
-
-        // User ID 1 is not allowed
-        // if ('1' == $user->ID) {
-        //     wp_safe_redirect(home_url() . '?message=casdoor_id_not_allowed');
-        //     exit;
-        // }
-
-        wp_clear_auth_cookie();
-        wp_set_current_user($user->ID);
-        wp_set_auth_cookie($user->ID);
-
-        if (is_user_logged_in()) {
-            wp_safe_redirect($user_redirect);
-            exit;
+        if ($user_id) {
+            wp_set_current_user($user_id);
+            wp_set_auth_cookie($user_id);
+            do_action('wp_login', $info->name, get_user_by('id', $user_id));
+        } else {
+            wp_die('Unable to find or create a local user for Casdoor account.');
         }
     }
 
-    wp_safe_redirect(home_url() . '?message=casdoor_sso_failed');
+    // Redirect after successful login
+    if (absint(casdoor_get_option('redirect_to_dashboard')) === 1) {
+        wp_safe_redirect(admin_url());
+    } else {
+        wp_safe_redirect($user_redirect);
+    }
     exit;
 }
