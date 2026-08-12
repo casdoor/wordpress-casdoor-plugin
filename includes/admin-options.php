@@ -67,7 +67,9 @@ class casdoor_admin
                                     href="https://github.com/casbin/casdoor" target="_blank">GitHub</a>)
                         </li>
                         <li>Create a new application and add following uri to callback URLs:
-                            <strong class="code"><?= site_url('?auth=casdoor'); ?></strong></li>
+                            <strong class="code"><?= site_url('?auth=casdoor'); ?></strong>,
+                            add <strong class="code"><?= home_url('/'); ?></strong> as well if you
+                            want to log out of casdoor together with WordPress</li>
                         <li>Copy the Client ID and Client Secret in Step 2 below.</li>
                     </ol>
                 </div>
@@ -143,6 +145,19 @@ class casdoor_admin
                                            value="1" <?= casdoor_get_option('auto_sso') == 1 ? 'checked="checked"' : ''; ?> />
                                 </td>
                             </tr>
+                            <tr valign="top">
+                                <th scope="row">Log out of casdoor when logging out of WordPress</th>
+                                <td>
+                                    <input type="checkbox"
+                                           name="<?= self::OPTIONS_NAME ?>[logout_from_casdoor]"
+                                           value="1" <?= casdoor_get_option('logout_from_casdoor') == 1 ? 'checked="checked"' : ''; ?> />
+                                    <p class="description">
+                                        The casdoor session is ended too, so the next login asks for the
+                                        credentials again. Requires <strong class="code"><?= home_url('/'); ?></strong>
+                                        in the <strong>Redirect URLs</strong> list of your casdoor application.
+                                    </p>
+                                </td>
+                            </tr>
                         </table>
                         
                         <p class="submit">
@@ -169,6 +184,7 @@ class casdoor_admin
     {
         $input['redirect_to_dashboard'] = isset($input['redirect_to_dashboard']) ? $input['redirect_to_dashboard'] : 0;
         $input['login_only']            = isset($input['login_only']) ? $input['login_only'] : 0;
+        $input['logout_from_casdoor']   = isset($input['logout_from_casdoor']) ? $input['logout_from_casdoor'] : 0;
         $input['organization']          = isset($input['organization']) ? $input['organization'] : 'built-in';
 
         return $input;

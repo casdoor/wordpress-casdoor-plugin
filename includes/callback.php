@@ -105,6 +105,9 @@ if (!empty($_GET['code'])) {
         wp_set_current_user($user_id);
         wp_set_auth_cookie($user_id);
 
+        // Keep the token, it is needed to log the user out of casdoor on wordpress logout.
+        update_user_meta($user_id, CASDOOR_TOKEN_META_KEY, $access_token);
+
         if (is_user_logged_in()) {
             wp_safe_redirect($user_redirect);
             exit;
@@ -136,6 +139,9 @@ if (!empty($_GET['code'])) {
         wp_clear_auth_cookie();
         wp_set_current_user($user->ID);
         wp_set_auth_cookie($user->ID);
+
+        // Keep the token, it is needed to log the user out of casdoor on wordpress logout.
+        update_user_meta($user->ID, CASDOOR_TOKEN_META_KEY, $access_token);
 
         if (is_user_logged_in()) {
             wp_safe_redirect($user_redirect);

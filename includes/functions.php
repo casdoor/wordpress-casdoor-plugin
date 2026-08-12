@@ -3,6 +3,12 @@
 // ABSPATH prevent public user to directly access your .php files through URL.
 defined('ABSPATH') or die('No script kiddies please!');
 
+// The user meta that keeps the casdoor access token of a user, it is needed to log the
+// user out of casdoor when the user logs out of wordpress.
+if (!defined('CASDOOR_TOKEN_META_KEY')) {
+    define('CASDOOR_TOKEN_META_KEY', 'casdoor_access_token');
+}
+
 function defaults()
 {
     return [
@@ -11,6 +17,7 @@ function defaults()
         'backend'               => '',
         'redirect_to_dashboard' => 0,
         'login_only'            => 0,
+        'logout_from_casdoor'   => 0,
     ];
 }
 
@@ -65,6 +72,49 @@ function get_casdoor_login_url(string $redirect = ''): string
     ];
     $params = http_build_query($params);
     return casdoor_get_option('backend') . '/login/oauth/authorize?' . $params;
+}
+
+/**
+ * Get the logout url of casdoor.
+ *
+ * Casdoor implements the OIDC RP-Initiated Logout on `/api/logout`, it ends the casdoor
+ * session and sends the user back to `post_logout_redirect_uri` afterwards.
+ * An empty string is returned when the logout can not be done, e.g. when the user logged
+ * in with the wordpress login form and there is no casdoor session at all.
+ *
+ * @param int    $user_id  the wordpress user that is logging out
+ * @param string $redirect where casdoor should send the user back to
+ *
+ * @return string
+ */
+function get_casdoor_logout_url(int $user_id, string $redirect = ''): string
+{
+    $backend = casdoor_get_option('backend');
+    if (empty($backend) || empty($user_id)) {
+        return '';
+    }
+
+    // Casdoor needs the access token to know which session has to be ended, it was saved
+    // when the user logged in.
+    $access_token = get_user_meta($user_id, CASDOOR_TOKEN_META_KEY, true);
+    if (empty($access_token)) {
+        return '';
+    }
+
+    if (empty($redirect)) {
+        $redirect = home_url('/');
+    }
+    // The redirect must be in the `Redirect URLs` list of the casdoor application,
+    // otherwise casdoor refuses to redirect back.
+    $redirect = apply_filters('casdoor_post_logout_redirect_url', $redirect);
+
+    $params = http_build_query([
+        'id_token_hint'            => $access_token,
+        'post_logout_redirect_uri' => $redirect,
+        'client_id'                => casdoor_get_option('client_id')
+    ]);
+
+    return rtrim($backend, '/') . '/api/logout?' . $params;
 }
 
 /**

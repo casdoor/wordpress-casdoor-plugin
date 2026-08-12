@@ -80,9 +80,72 @@ class FunctionsTest extends TestCase
             ->andReturn('http://example.com/?auth=casdoor');
         
         $url = get_casdoor_login_url();
-        
+
         $this->assertIsString($url);
         $this->assertStringContainsString('http://localhost:8000/login/oauth/authorize', $url);
         $this->assertStringContainsString('client_id=test_client', $url);
+    }
+
+    public function test_get_casdoor_logout_url()
+    {
+        require_once dirname(__DIR__) . '/includes/admin-options.php';
+        require_once dirname(__DIR__) . '/includes/functions.php';
+
+        Functions\expect('get_option')
+            ->with('casdoor_options', [])
+            ->andReturn([
+                'client_id' => 'test_client',
+                'backend'   => 'http://localhost:8000/'
+            ]);
+
+        // The access token of the user is saved when the user logs in.
+        Functions\expect('get_user_meta')
+            ->with(1, 'casdoor_access_token', true)
+            ->andReturn('test_access_token');
+
+        Functions\when('home_url')->justReturn('http://example.com/');
+
+        $url = get_casdoor_logout_url(1);
+
+        $this->assertStringContainsString('http://localhost:8000/api/logout?', $url);
+        $this->assertStringContainsString('id_token_hint=test_access_token', $url);
+        $this->assertStringContainsString('post_logout_redirect_uri=' . urlencode('http://example.com/'), $url);
+        $this->assertStringContainsString('client_id=test_client', $url);
+    }
+
+    public function test_get_casdoor_logout_url_without_token()
+    {
+        require_once dirname(__DIR__) . '/includes/admin-options.php';
+        require_once dirname(__DIR__) . '/includes/functions.php';
+
+        Functions\expect('get_option')
+            ->with('casdoor_options', [])
+            ->andReturn([
+                'client_id' => 'test_client',
+                'backend'   => 'http://localhost:8000'
+            ]);
+
+        // Users that did not log in through casdoor have no token, they can not be logged
+        // out of casdoor.
+        Functions\expect('get_user_meta')
+            ->with(1, 'casdoor_access_token', true)
+            ->andReturn('');
+
+        $this->assertSame('', get_casdoor_logout_url(1));
+    }
+
+    public function test_get_casdoor_logout_url_without_backend()
+    {
+        require_once dirname(__DIR__) . '/includes/admin-options.php';
+        require_once dirname(__DIR__) . '/includes/functions.php';
+
+        Functions\expect('get_option')
+            ->with('casdoor_options', [])
+            ->andReturn([
+                'client_id' => 'test_client',
+                'backend'   => ''
+            ]);
+
+        $this->assertSame('', get_casdoor_logout_url(1));
     }
 }

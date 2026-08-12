@@ -24,6 +24,7 @@ Then click on this new section and set up your casdoor plugin, this mainly invol
 - Redirect to the dashboard after signing in: If this radio box is checked, after logging in, the user will be redirected to the dashboard page.
 - Restrict flow to log in only: If this radio box is checked, casdoor will not insert user's information to wordpress's wp_users table.In other words, casdoor users that do not exist in the wordpress will not be able to login.
 - Auto SSO for users that are not logged in: If this radio box is checked, the user will be redirected to the login page, even if the page the user visits does not require a login.
+- Log out of casdoor when logging out of WordPress: If this radio box is checked, logging out of WordPress also ends the casdoor session, so the next login asks for the credentials again. Add `http://your-wordpress-domain/` to the `Redirect URLs` list of your casdoor application too, casdoor only redirects back to an allowed url after the logout.
 
 After successfully setting up this plugin, all login requests sent to login.php will be redirected to casdoor application.
 

@@ -88,8 +88,31 @@ class Casdoor
         }
     }
 
-    public function logout()
+    /**
+     * When the user logs out of wordpress, log the user out of casdoor as well.
+     * Without this the casdoor session stays alive, so the user is still logged in on the
+     * casdoor side and the next login will not ask for the credentials again.
+     *
+     * @param int $user_id the user that logs out, passed by the `wp_logout` hook
+     *
+     * @return void
+     */
+    public function logout($user_id = 0)
     {
+        // The current user is already reset when `wp_logout` fires, so the id comes from the hook.
+        $user_id    = absint($user_id);
+        $logout_url = absint(casdoor_get_option('logout_from_casdoor')) ? get_casdoor_logout_url($user_id) : '';
+
+        // The token belongs to the session that just ended, casdoor expires it during the logout.
+        if ($user_id) {
+            delete_user_meta($user_id, CASDOOR_TOKEN_META_KEY);
+        }
+
+        if ($logout_url !== '') {
+            wp_redirect($logout_url);
+            exit();
+        }
+
         $auto_sso = absint(casdoor_get_option('auto_sso'));
         if (!$auto_sso) {
             wp_redirect(home_url());

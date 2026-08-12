@@ -32,6 +32,7 @@ function casdoor_register_files()
 $casdoor = new Casdoor();
 add_action('admin_menu', [$casdoor, 'plugin_init']);
 add_action('wp_enqueue_scripts', [$casdoor, 'wp_enqueue']);
-add_action('wp_logout', [$casdoor, 'logout']);
+// The user id is needed to log the user out of casdoor, so ask for the hook argument.
+add_action('wp_logout', [$casdoor, 'logout'], 10, 1);
 register_activation_hook(__FILE__, [$casdoor, 'setup']);
 register_activation_hook(__FILE__, [$casdoor, 'upgrade']);
