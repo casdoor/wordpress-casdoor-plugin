@@ -37,7 +37,7 @@ vendor/bin/phpunit --coverage-html coverage
 
 ## Commit Message Convention
 
-This project uses [Conventional Commits](https://www.conventionalcommits.org/) for automated versioning and changelog generation.
+This project uses [Conventional Commits](https://www.conventionalcommits.org/) for automated versioning and release notes generation.
 
 ### Format
 
@@ -107,8 +107,8 @@ Releases are automated using semantic-release:
 
 - Merging to `main`/`master` triggers the release workflow
 - Version numbers are determined by commit messages
-- Changelog is automatically generated
-- GitHub releases are created automatically
+- A Git tag is created on the released commit, with no extra release commit
+- GitHub releases are created automatically, and their notes serve as the changelog
 
 ## Questions?
 
