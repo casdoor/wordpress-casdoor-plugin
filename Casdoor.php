@@ -71,21 +71,28 @@ class Casdoor
     /**
      * When wp-login.php was visited, redirect to the login page of casdoor
      *
+     * Users that only exist in wordpress can not log in on casdoor, so the wordpress login form
+     * is still served on `wp-login.php?use_native_login=1`, see casdoor_should_redirect_login().
+     *
      * @return void
      */
     public static function custom_login() {
         global $pagenow;
         $activated = absint( casdoor_get_option( 'active' ) );
-        $action = filter_input( INPUT_GET, 'action', FILTER_SANITIZE_STRING ) ?? '';
-        if (
-            'wp-login.php' === $pagenow
-            && 'logout'     !== $action
-            && $activated
-        ) {
+        if ( 'wp-login.php' !== $pagenow || !$activated ) {
+            return;
+        }
+
+        if ( casdoor_should_redirect_login( $_SERVER['REQUEST_METHOD'] ?? 'GET', $_GET ) ) {
             $url = get_casdoor_login_url();
             wp_redirect( $url );
             exit();
         }
+
+        // The wordpress login form is shown, keep the links on it (e.g. "Back to login" on the
+        // lost password page) on the wordpress form and offer casdoor as well.
+        add_filter( 'login_url', 'casdoor_native_login_url' );
+        add_action( 'login_form', 'casdoor_login_form_button' );
     }
 
     /**

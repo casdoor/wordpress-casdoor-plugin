@@ -148,4 +148,40 @@ class FunctionsTest extends TestCase
 
         $this->assertSame('', get_casdoor_logout_url(1));
     }
+
+    public function test_casdoor_should_redirect_login_for_login_page()
+    {
+        require_once dirname(__DIR__) . '/includes/functions.php';
+
+        $this->assertTrue(casdoor_should_redirect_login('GET', []));
+        $this->assertTrue(casdoor_should_redirect_login('GET', ['action' => 'login']));
+        $this->assertTrue(casdoor_should_redirect_login('GET', ['redirect_to' => 'http://example.com/wp-admin/', 'reauth' => '1']));
+    }
+
+    public function test_casdoor_should_redirect_login_keeps_wordpress_login()
+    {
+        require_once dirname(__DIR__) . '/includes/functions.php';
+
+        // The wordpress login form asked for explicitly, e.g. by a user that only exists in wordpress
+        $this->assertFalse(casdoor_should_redirect_login('GET', ['use_native_login' => '1']));
+        // The login form is posted to wp-login.php
+        $this->assertFalse(casdoor_should_redirect_login('POST', []));
+        $this->assertFalse(casdoor_should_redirect_login('POST', ['action' => 'login']));
+        // Actions handled by wordpress
+        $this->assertFalse(casdoor_should_redirect_login('GET', ['action' => 'logout']));
+        $this->assertFalse(casdoor_should_redirect_login('GET', ['action' => 'lostpassword']));
+        $this->assertFalse(casdoor_should_redirect_login('GET', ['action' => 'rp', 'key' => 'abc', 'login' => 'admin']));
+    }
+
+    public function test_casdoor_native_login_url()
+    {
+        require_once dirname(__DIR__) . '/includes/functions.php';
+
+        Functions\expect('add_query_arg')
+            ->once()
+            ->with('use_native_login', '1', 'http://example.com/wp-login.php')
+            ->andReturn('http://example.com/wp-login.php?use_native_login=1');
+
+        $this->assertEquals('http://example.com/wp-login.php?use_native_login=1', casdoor_native_login_url('http://example.com/wp-login.php'));
+    }
 }

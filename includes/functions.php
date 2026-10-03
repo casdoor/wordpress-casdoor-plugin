@@ -118,6 +118,45 @@ function get_casdoor_logout_url(int $user_id, string $redirect = ''): string
 }
 
 /**
+ * Whether a request to wp-login.php should be redirected to the login page of casdoor.
+ *
+ * Only the plain login page is replaced by casdoor. The login form posts to wp-login.php and
+ * the other actions (logout, lost password, reset password, ...) are left to wordpress, and
+ * `use_native_login=1` shows the wordpress login form. Otherwise users that only exist in
+ * wordpress are sent to casdoor every time and can never log in.
+ *
+ * @param string $method the request method
+ * @param array  $query  the query parameters of the request
+ *
+ * @return bool
+ */
+function casdoor_should_redirect_login(string $method, array $query): bool
+{
+    if (strtoupper($method) !== 'GET') {
+        return false;
+    }
+    if (!empty($query['use_native_login'])) {
+        return false;
+    }
+
+    $action = isset($query['action']) && is_string($query['action']) ? $query['action'] : '';
+    return $action === '' || $action === 'login';
+}
+
+/**
+ * Keep the login links on the wordpress login form, used as the `login_url` filter while
+ * wp-login.php shows the wordpress form.
+ *
+ * @param string $login_url
+ *
+ * @return string
+ */
+function casdoor_native_login_url(string $login_url): string
+{
+    return add_query_arg('use_native_login', '1', $login_url);
+}
+
+/**
  * Add login button for casdoor on the login form.
  *
  * @link https://codex.wordpress.org/Plugin_API/Action_Reference/login_form
@@ -130,9 +169,7 @@ function casdoor_login_form_button()
     <div style="clear:both;"></div>
     <?php
 }
-// Fires following the ‘Password’ field in the login form.
-// It can be used to customize the built-in WordPress login form. Use in conjunction with ‘login_head‘ (for validation).
-// add_action('login_form', 'casdoor_login_form_button');
+// It is added to the login form in Casdoor::custom_login() when the wordpress login form is shown.
 
 /**
  * Login Button Shortcode

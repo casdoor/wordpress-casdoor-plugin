@@ -28,6 +28,8 @@ Then click on this new section and set up your casdoor plugin, this mainly invol
 
 After successfully setting up this plugin, all login requests sent to login.php will be redirected to casdoor application.
 
+Users that only exist in WordPress (e.g. the admin created when installing WordPress) can not log in on casdoor. They can still use the WordPress login form at `http://your-wordpress-domain/wp-login.php?use_native_login=1`, which also has a button to log in with casdoor. Lost password and reset password pages of WordPress are not redirected either.
+
 ## workflow
 After the username/email, password you entered is verified by casdoor, there may be two situations. Casdoor will try to find the corresponding user, if the user exists in wordpress, casdoor will login as this user, otherwise it will insert the user's information to the wp_users table of wordpress, then login as this user.
 
