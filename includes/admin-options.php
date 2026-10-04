@@ -117,7 +117,7 @@ class casdoor_admin
                                 <td>
                                     <input type="text" name="<?= self::OPTIONS_NAME ?>[organization]" 
                                            value="<?= casdoor_get_option('organization'); ?>"/>
-                                    <p class="description">Example/Default: built-in</p>
+                                    <p class="description">Only the users of this organization can log in, leave it empty to allow all organizations. Example/Default: built-in</p>
                                 </td>
                             </tr>
 

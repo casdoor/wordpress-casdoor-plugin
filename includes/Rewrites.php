@@ -49,8 +49,11 @@ class Rewrites
             if (count($matches) == 3 && $matches[1] == 'casdoor') {
                 $tmp = explode('=', $matches[2]);
                 if ($tmp[0] == '?code') {
-                    $url =  home_url("?auth=casdoor&code={$tmp[1]}");
-                    wp_redirect($url);
+                    $args = ['auth' => 'casdoor', 'code' => $tmp[1]];
+                    if (isset($_GET['state']) && is_string($_GET['state'])) {
+                        $args['state'] = sanitize_text_field(wp_unslash($_GET['state']));
+                    }
+                    wp_redirect(home_url('?' . http_build_query($args)));
                     exit;
                 }
             }

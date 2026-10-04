@@ -84,7 +84,11 @@ class Casdoor
         }
 
         if ( casdoor_should_redirect_login( $_SERVER['REQUEST_METHOD'] ?? 'GET', $_GET ) ) {
-            $url = get_casdoor_login_url();
+            // The login starts on the callback, it creates the state and keeps `redirect_to`.
+            $url = casdoor_redirect_uri();
+            if ( !empty( $_GET['redirect_to'] ) && is_string( $_GET['redirect_to'] ) ) {
+                $url = add_query_arg( 'redirect_uri', rawurlencode( wp_unslash( $_GET['redirect_to'] ) ), $url );
+            }
             wp_redirect( $url );
             exit();
         }

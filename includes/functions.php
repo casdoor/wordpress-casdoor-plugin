@@ -53,25 +53,324 @@ function casdoor_set_options(string $key, $value)
     update_option(casdoor_admin::OPTIONS_NAME, $options);
 }
 
+// The user meta that links a wordpress user to its casdoor user (the id of the casdoor user).
+if (!defined('CASDOOR_USER_META_KEY')) {
+    define('CASDOOR_USER_META_KEY', 'casdoor_user_id');
+}
+
+// The cookie that binds the state of a login to the browser that started it.
+if (!defined('CASDOOR_STATE_COOKIE')) {
+    define('CASDOOR_STATE_COOKIE', 'casdoor_state');
+}
+
 /**
- * Get the login url of casdoor
- *
- * @param string $redirect
+ * The url casdoor sends the user back to with the authorization code. It must be in the
+ * `Redirect URLs` list of the casdoor application.
  *
  * @return string
  */
-function get_casdoor_login_url(string $redirect = ''): string
+function casdoor_redirect_uri(): string
+{
+    return site_url('?auth=casdoor');
+}
+
+/**
+ * Get the url of the casdoor endpoint with the given path.
+ *
+ * @param string $path
+ *
+ * @return string
+ */
+function casdoor_backend_url(string $path): string
+{
+    return rtrim((string) casdoor_get_option('backend'), '/') . $path;
+}
+
+/**
+ * Get the login url of casdoor
+ *
+ * The client secret never goes into this url, the url is visible to the browser.
+ *
+ * @param string $state the state created by casdoor_create_state()
+ *
+ * @return string
+ */
+function get_casdoor_login_url(string $state = ''): string
 {
     $params = [
-        'oauth'         => 'authorize',
-        'response_type' => 'code',
         'client_id'     => casdoor_get_option('client_id'),
-        'client_secret' => casdoor_get_option('client_secret'),
-        'redirect_uri'  => site_url('?auth=casdoor'),
-        'state'         => urlencode($redirect)
+        'response_type' => 'code',
+        'redirect_uri'  => casdoor_redirect_uri(),
+        'scope'         => 'read',
+        'state'         => $state,
     ];
-    $params = http_build_query($params);
-    return casdoor_get_option('backend') . '/login/oauth/authorize?' . $params;
+    return casdoor_backend_url('/login/oauth/authorize?' . http_build_query($params));
+}
+
+/**
+ * Write the state cookie, an empty value removes it.
+ *
+ * @param string $value
+ * @param int    $expires
+ *
+ * @return void
+ */
+function casdoor_set_state_cookie(string $value, int $expires)
+{
+    setcookie(CASDOOR_STATE_COOKIE, $value, [
+        'expires'  => $expires,
+        'path'     => defined('COOKIEPATH') && COOKIEPATH ? COOKIEPATH : '/',
+        'domain'   => defined('COOKIE_DOMAIN') && COOKIE_DOMAIN ? COOKIE_DOMAIN : '',
+        'secure'   => is_ssl(),
+        'httponly' => true,
+        'samesite' => 'Lax',
+    ]);
+}
+
+/**
+ * Start a login: create a random state, remember where to send the user after the login and
+ * bind the state to this browser with a cookie, so a code that was obtained in another browser
+ * (login CSRF) is refused by casdoor_consume_state().
+ *
+ * @param string $redirect where to send the user after the login
+ *
+ * @return string the state to send to casdoor
+ */
+function casdoor_create_state(string $redirect): string
+{
+    $state = wp_generate_password(32, false, false);
+    set_transient('casdoor_state_' . $state, $redirect, 10 * MINUTE_IN_SECONDS);
+    casdoor_set_state_cookie($state, time() + 10 * MINUTE_IN_SECONDS);
+    return $state;
+}
+
+/**
+ * Check the state that casdoor sent back and use it up.
+ *
+ * @param string $state the state from the callback
+ *
+ * @return string|null where to send the user after the login, null if the state is invalid
+ */
+function casdoor_consume_state(string $state)
+{
+    $cookie = isset($_COOKIE[CASDOOR_STATE_COOKIE]) && is_string($_COOKIE[CASDOOR_STATE_COOKIE]) ? $_COOKIE[CASDOOR_STATE_COOKIE] : '';
+    casdoor_set_state_cookie('', time() - HOUR_IN_SECONDS);
+
+    if ($state === '' || $cookie === '' || !hash_equals($cookie, $state) || !preg_match('/^[a-zA-Z0-9]+$/', $state)) {
+        return null;
+    }
+
+    $redirect = get_transient('casdoor_state_' . $state);
+    delete_transient('casdoor_state_' . $state);
+    if ($redirect === false) {
+        return null;
+    }
+    return (string) $redirect;
+}
+
+/**
+ * Exchange the authorization code for an access token.
+ *
+ * @param string $code
+ *
+ * @return string|WP_Error
+ */
+function casdoor_exchange_code(string $code)
+{
+    $response = wp_remote_post(casdoor_backend_url('/api/login/oauth/access_token'), [
+        'timeout' => 15,
+        'body'    => [
+            'grant_type'    => 'authorization_code',
+            'code'          => $code,
+            'client_id'     => casdoor_get_option('client_id'),
+            'client_secret' => casdoor_get_option('client_secret'),
+            'redirect_uri'  => casdoor_redirect_uri(),
+        ],
+    ]);
+    if (is_wp_error($response)) {
+        return $response;
+    }
+
+    $tokens = json_decode(wp_remote_retrieve_body($response), true);
+    if (!is_array($tokens) || empty($tokens['access_token']) || !is_string($tokens['access_token'])) {
+        $error = is_array($tokens) && !empty($tokens['error_description']) ? $tokens['error_description'] : 'no access token returned by casdoor';
+        return new WP_Error('casdoor_token', $error);
+    }
+    return $tokens['access_token'];
+}
+
+/**
+ * Get the casdoor user that owns the access token.
+ *
+ * Casdoor looks the token up in its own database, so the user does not depend on decoding
+ * the token here.
+ *
+ * @param string $access_token
+ *
+ * @return object|WP_Error the casdoor user, e.g. owner, name, id, email, emailVerified, isAdmin
+ */
+function casdoor_get_account(string $access_token)
+{
+    $response = wp_remote_get(casdoor_backend_url('/api/get-account'), [
+        'timeout' => 15,
+        'headers' => ['Authorization' => 'Bearer ' . $access_token],
+    ]);
+    if (is_wp_error($response)) {
+        return $response;
+    }
+
+    $body = json_decode(wp_remote_retrieve_body($response));
+    if (!is_object($body) || ($body->status ?? '') !== 'ok' || !isset($body->data) || !is_object($body->data)
+        || empty($body->data->owner) || empty($body->data->name)) {
+        $error = is_object($body) && !empty($body->msg) ? $body->msg : 'failed to get the casdoor user';
+        return new WP_Error('casdoor_account', $error);
+    }
+    return $body->data;
+}
+
+/**
+ * The stable id of a casdoor user, the user id or `owner/name` for old casdoor versions.
+ *
+ * @param object $account
+ *
+ * @return string
+ */
+function casdoor_account_id($account): string
+{
+    if (!empty($account->id)) {
+        return (string) $account->id;
+    }
+    return $account->owner . '/' . $account->name;
+}
+
+/**
+ * Get `owner/name` of the user an access token was issued to, without checking the signature.
+ * It is only used on tokens that the plugin saved itself.
+ *
+ * @param string $token
+ *
+ * @return string
+ */
+function casdoor_token_subject(string $token): string
+{
+    $parts = explode('.', $token);
+    if (count($parts) !== 3) {
+        return '';
+    }
+    $payload = json_decode(base64_decode(strtr($parts[1], '-_', '+/')), true);
+    if (!is_array($payload) || empty($payload['owner']) || empty($payload['name'])) {
+        return '';
+    }
+    return $payload['owner'] . '/' . $payload['name'];
+}
+
+/**
+ * Find the wordpress user of a casdoor user.
+ *
+ * A wordpress user is used when it is linked to the casdoor user, when it logged in with this
+ * casdoor user before the plugin linked users, or when it has the email the casdoor user has
+ * verified. The login name alone is never enough, anyone can register a casdoor user named
+ * `admin`.
+ *
+ * @param object $account
+ *
+ * @return WP_User|null
+ */
+function casdoor_find_user($account)
+{
+    $users = get_users([
+        'meta_key'   => CASDOOR_USER_META_KEY,
+        'meta_value' => casdoor_account_id($account),
+        'number'     => 1,
+    ]);
+    if (!empty($users)) {
+        return $users[0];
+    }
+
+    $user = get_user_by('login', $account->name);
+    if ($user) {
+        $token = get_user_meta($user->ID, CASDOOR_TOKEN_META_KEY, true);
+        if (is_string($token) && $token !== '' && casdoor_token_subject($token) === $account->owner . '/' . $account->name) {
+            return $user;
+        }
+    }
+
+    if (!empty($account->email) && !empty($account->emailVerified)) {
+        $user = get_user_by('email', $account->email);
+        if ($user) {
+            return $user;
+        }
+    }
+
+    return null;
+}
+
+/**
+ * Get a login name for a new wordpress user that is not taken yet.
+ *
+ * @param string $name the casdoor user name
+ *
+ * @return string
+ */
+function casdoor_unique_login(string $name): string
+{
+    $base = sanitize_user($name, true);
+    if ($base === '') {
+        $base = 'casdoor-user';
+    }
+
+    $login = $base;
+    for ($i = 2; username_exists($login); $i++) {
+        $login = $base . '-' . $i;
+    }
+    return $login;
+}
+
+/**
+ * Create the wordpress user of a casdoor user.
+ *
+ * @param object $account
+ *
+ * @return WP_User|WP_Error
+ */
+function casdoor_create_user($account)
+{
+    $email = !empty($account->email) ? (string) $account->email : '';
+    // The email belongs to another wordpress user but casdoor has not verified it, so the
+    // users can not be linked.
+    if ($email !== '' && email_exists($email)) {
+        return new WP_Error('casdoor_email_conflict', 'the email is used by another user');
+    }
+
+    $user_data = [
+        'user_login'   => casdoor_unique_login((string) $account->name),
+        'user_email'   => $email,
+        'user_pass'    => wp_generate_password(24, true, true),
+        'display_name' => !empty($account->displayName) ? $account->displayName : $account->name,
+    ];
+    // Only the admins of the organization that is allowed to log in become administrators.
+    if (!empty($account->isAdmin) && casdoor_get_option('organization') === $account->owner) {
+        $user_data['role'] = 'administrator';
+    }
+
+    $user_id = wp_insert_user($user_data);
+    if (is_wp_error($user_id)) {
+        return $user_id;
+    }
+    return get_user_by('id', $user_id);
+}
+
+/**
+ * Send the user to the home page with one of the messages of templates/error-msg.php.
+ *
+ * @param string $message
+ *
+ * @return void
+ */
+function casdoor_login_failed(string $message)
+{
+    wp_safe_redirect(add_query_arg('message', $message, home_url('/')));
+    exit;
 }
 
 /**

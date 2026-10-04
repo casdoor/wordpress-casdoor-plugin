@@ -79,11 +79,14 @@ class FunctionsTest extends TestCase
             ->with('?auth=casdoor')
             ->andReturn('http://example.com/?auth=casdoor');
         
-        $url = get_casdoor_login_url();
+        $url = get_casdoor_login_url('abc123');
 
         $this->assertIsString($url);
         $this->assertStringContainsString('http://localhost:8000/login/oauth/authorize', $url);
         $this->assertStringContainsString('client_id=test_client', $url);
+        $this->assertStringContainsString('state=abc123', $url);
+        // The url is visible to the browser, the secret must not be in it
+        $this->assertStringNotContainsString('test_secret', $url);
     }
 
     public function test_get_casdoor_logout_url()
