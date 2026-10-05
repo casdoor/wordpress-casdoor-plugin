@@ -1,0 +1,54 @@
+name: Deploy
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+
+permissions:
+  contents: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      SVN_USERNAME: ${{ secrets.SVN_USERNAME }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # the version is only set here and never committed back to the repository
+      - name: Set the version from the tag
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          sed -i "s/^ \* Version: .*/ * Version:           $VERSION/" casdoor.php
+          sed -i "s/^Stable tag: .*/Stable tag: $VERSION/" readme.txt
+          grep -n "Version:" casdoor.php
+          grep -n "Stable tag:" readme.txt
+
+      - name: Build the plugin zip
+        run: |
+          mkdir -p build/casdoor
+          rsync -a --exclude-from=.distignore ./ build/casdoor/
+          cd build && zip -qr casdoor.zip casdoor
+
+      # semantic-release pushes the tag before it creates the release, so wait for it
+      - name: Attach the zip to the GitHub release
+        run: |
+          for i in $(seq 1 30); do
+            gh release view "$GITHUB_REF_NAME" > /dev/null 2>&1 && break
+            sleep 10
+          done
+          gh release upload "$GITHUB_REF_NAME" build/casdoor.zip --clobber
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      # needs the SVN_USERNAME and SVN_PASSWORD secrets of the WordPress.org account, the
+      # step is skipped until the plugin is approved and the secrets are set
+      - name: Deploy to WordPress.org
+        if: env.SVN_USERNAME != ''
+        uses: 10up/action-wordpress-plugin-deploy@stable
+        env:
+          SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}
+          SLUG: casdoor
+          VERSION: ${{ env.VERSION }}

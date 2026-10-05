@@ -19,7 +19,6 @@
     },
     "autoload": {
         "classmap": [
-            "Casdoor.php",
             "includes/"
         ]
     },

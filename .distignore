@@ -1,0 +1,21 @@
+# Files that are not shipped in the plugin zip and to WordPress.org
+/.git
+/.idea
+/.vscode
+/.github
+/.wordpress-org
+/build
+/tests
+/vendor
+/node_modules
+/coverage
+.distignore
+.gitignore
+.releaserc.json
+.phpunit.result.cache
+composer.json
+composer.lock
+patchwork.json
+phpunit.xml
+coverage.xml
+README.md

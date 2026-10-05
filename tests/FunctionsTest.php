@@ -23,14 +23,14 @@ class FunctionsTest extends TestCase
         parent::tearDown();
     }
 
-    public function test_defaults_function_returns_array()
+    public function test_default_options()
     {
         // Mock add_shortcode function
         Functions\when('add_shortcode')->justReturn(true);
         
         require_once dirname(__DIR__) . '/includes/functions.php';
         
-        $defaults = defaults();
+        $defaults = casdoor_default_options();
         
         $this->assertIsArray($defaults);
         $this->assertArrayHasKey('client_id', $defaults);
@@ -42,7 +42,6 @@ class FunctionsTest extends TestCase
 
     public function test_casdoor_get_option_with_mocked_wordpress()
     {
-        require_once dirname(__DIR__) . '/includes/admin-options.php';
         require_once dirname(__DIR__) . '/includes/functions.php';
         
         // Mock get_option to return test data
@@ -62,7 +61,6 @@ class FunctionsTest extends TestCase
 
     public function test_get_casdoor_login_url()
     {
-        require_once dirname(__DIR__) . '/includes/admin-options.php';
         require_once dirname(__DIR__) . '/includes/functions.php';
         
         // Mock WordPress functions
@@ -79,7 +77,7 @@ class FunctionsTest extends TestCase
             ->with('?auth=casdoor')
             ->andReturn('http://example.com/?auth=casdoor');
         
-        $url = get_casdoor_login_url('abc123');
+        $url = casdoor_get_login_url('abc123');
 
         $this->assertIsString($url);
         $this->assertStringContainsString('http://localhost:8000/login/oauth/authorize', $url);
@@ -91,7 +89,6 @@ class FunctionsTest extends TestCase
 
     public function test_get_casdoor_logout_url()
     {
-        require_once dirname(__DIR__) . '/includes/admin-options.php';
         require_once dirname(__DIR__) . '/includes/functions.php';
 
         Functions\expect('get_option')
@@ -108,7 +105,7 @@ class FunctionsTest extends TestCase
 
         Functions\when('home_url')->justReturn('http://example.com/');
 
-        $url = get_casdoor_logout_url(1);
+        $url = casdoor_get_logout_url(1);
 
         $this->assertStringContainsString('http://localhost:8000/api/logout?', $url);
         $this->assertStringContainsString('id_token_hint=test_access_token', $url);
@@ -118,7 +115,6 @@ class FunctionsTest extends TestCase
 
     public function test_get_casdoor_logout_url_without_token()
     {
-        require_once dirname(__DIR__) . '/includes/admin-options.php';
         require_once dirname(__DIR__) . '/includes/functions.php';
 
         Functions\expect('get_option')
@@ -134,12 +130,11 @@ class FunctionsTest extends TestCase
             ->with(1, 'casdoor_access_token', true)
             ->andReturn('');
 
-        $this->assertSame('', get_casdoor_logout_url(1));
+        $this->assertSame('', casdoor_get_logout_url(1));
     }
 
     public function test_get_casdoor_logout_url_without_backend()
     {
-        require_once dirname(__DIR__) . '/includes/admin-options.php';
         require_once dirname(__DIR__) . '/includes/functions.php';
 
         Functions\expect('get_option')
@@ -149,7 +144,7 @@ class FunctionsTest extends TestCase
                 'backend'   => ''
             ]);
 
-        $this->assertSame('', get_casdoor_logout_url(1));
+        $this->assertSame('', casdoor_get_logout_url(1));
     }
 
     public function test_casdoor_should_redirect_login_for_login_page()

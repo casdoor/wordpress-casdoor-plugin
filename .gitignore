@@ -33,3 +33,6 @@ composer.lock
 .phpunit.result.cache
 coverage/
 coverage.xml
+
+# Plugin zip
+/build/

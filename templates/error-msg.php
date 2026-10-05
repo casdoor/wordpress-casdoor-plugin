@@ -1,26 +1,21 @@
 <?php
 
-// ABSPATH prevent public user to directly access your .php files through URL.
-defined('ABSPATH') or die('No script kiddies please!');
+defined('ABSPATH') || exit;
 
-$message = $wp_query->get('message');
-$alert_message = '';
-if ($message == 'casdoor_login_only') {
-    $alert_message = 'This casdoor account doesn\'t exists in wordpress, please use another.';
-} elseif ($message == 'casdoor_sso_failed') {
-    $alert_message = 'Casdoor Single Sign On Failed. User mismatch or clash with existing data and SSO can not complete.';
-} elseif ($message == 'casdoor_id_not_allowed') {
-    $alert_message = 'For security reasons, this user can not use Single Sign On.';
-} elseif ($message == 'casdoor_invalid_state') {
-    $alert_message = 'Casdoor Single Sign On Failed. The login was not started in this browser or has expired.';
-} elseif ($message == 'casdoor_wrong_organization') {
-    $alert_message = 'Casdoor Single Sign On Failed. This casdoor user does not belong to the organization of this site.';
-} elseif ($message == 'casdoor_email_conflict') {
-    $alert_message = 'Casdoor Single Sign On Failed. The email is used by another user, verify the email in casdoor first.';
-}
+$casdoor_messages = [
+    'casdoor_login_only'         => __('This Casdoor account does not exist in WordPress, please use another one.', 'casdoor'),
+    'casdoor_sso_failed'         => __('Casdoor login failed.', 'casdoor'),
+    'casdoor_invalid_state'      => __('Casdoor login failed. The login was not started in this browser or has expired.', 'casdoor'),
+    'casdoor_wrong_organization' => __('Casdoor login failed. This Casdoor user does not belong to the organization of this site.', 'casdoor'),
+    'casdoor_email_conflict'     => __('Casdoor login failed. The email is used by another user, verify the email in Casdoor first.', 'casdoor'),
+];
+$casdoor_message = Casdoor_Rewrites::message();
 
-if (!empty($alert_message)) : ?>
-    <div class="error">
-        <p class="alertbar"><?= $alert_message . ' <a href="' . site_url('?auth=casdoor') . '">Please try again</a>'?></p>
+if (isset($casdoor_messages[$casdoor_message])) : ?>
+    <div class="casdoor-message error" role="alert">
+        <p>
+            <?php echo esc_html($casdoor_messages[$casdoor_message]); ?>
+            <a href="<?php echo esc_url(casdoor_redirect_uri()); ?>"><?php esc_html_e('Please try again', 'casdoor'); ?></a>
+        </p>
     </div>
 <?php endif; ?>

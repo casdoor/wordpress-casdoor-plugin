@@ -1,30 +1,33 @@
-# wordpress-casdoor-plugin
+# Casdoor – SSO, OAuth 2.0 & OIDC Login
 
 [![Tests](https://github.com/casdoor/wordpress-casdoor-plugin/actions/workflows/test.yml/badge.svg)](https://github.com/casdoor/wordpress-casdoor-plugin/actions/workflows/test.yml)
-[![Semantic Release](https://github.com/casdoor/wordpress-casdoor-plugin/actions/workflows/release.yml/badge.svg)](https://github.com/casdoor/wordpress-casdoor-plugin/actions/workflows/release.yml)
+[![Release](https://github.com/casdoor/wordpress-casdoor-plugin/actions/workflows/release.yml/badge.svg)](https://github.com/casdoor/wordpress-casdoor-plugin/actions/workflows/release.yml)
+[![GitHub release](https://img.shields.io/github/v/release/casdoor/wordpress-casdoor-plugin.svg)](https://github.com/casdoor/wordpress-casdoor-plugin/releases/latest)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 
-This plugin is designed and developed for use with [casdoor](https://github.com/casbin/casdoor). After activating the plugin, it will replace standard WordPress login forms with one powered by casdoor. 
+The WordPress plugin for [Casdoor](https://github.com/casdoor/casdoor): users log in to WordPress with their Casdoor account over OAuth 2.0 and OpenID Connect. The plugin slug is `casdoor`.
 
 ## Installation
-This plugin has not been published to wordpress plugin store, so you need to download this plugin, and move it to the `wp-content/plugins` directory manaully.
+
+Download `casdoor.zip` from the [latest release](https://github.com/casdoor/wordpress-casdoor-plugin/releases/latest) and upload it in WordPress under Plugins > Add New > Upload Plugin. The plugin is being submitted to the WordPress.org plugin directory as `casdoor`.
 
 ## Get started
 First, activate this plugin as an admin, this will add a new section about casdoor to your settings page. 
 
 Because this plugin is a client of casdoor. So you need to run a casdoor program, create a application and add `http://your-wordpress-domain/?auth=casdoor` to the `Redirect URLs` list of your casdoor application.
 
-Then click on this new section and set up your casdoor plugin, this mainly involves the following settings.
+Then open Settings > Casdoor SSO and set up the plugin, this mainly involves the following settings.
 
-- Activate Casdoor: If this radio box is checked, the default login form will be replaced.
-- Client ID: the client id of your casdoor application.
-- Client Secret: the client secret of your casdoor application.
-- Backend URL: The address of the computer running your casdoor program:the backend port.
-- Organization: Only the users of this organization can log in, e.g. the organization of your casdoor application. Leave it empty to allow the users of all organizations.
-- Redirect to the dashboard after signing in: If this radio box is checked, after logging in, the user will be redirected to the dashboard page.
-- Restrict flow to log in only: If this radio box is checked, casdoor will not insert user's information to wordpress's wp_users table.In other words, casdoor users that do not exist in the wordpress will not be able to login.
-- Auto SSO for users that are not logged in: If this radio box is checked, the user will be redirected to the login page, even if the page the user visits does not require a login.
-- Log out of casdoor when logging out of WordPress: If this radio box is checked, logging out of WordPress also ends the casdoor session, so the next login asks for the credentials again. Add `http://your-wordpress-domain/` to the `Redirect URLs` list of your casdoor application too, casdoor only redirects back to an allowed url after the logout.
+- Activate: replace the WordPress login page with Casdoor.
+- Casdoor URL: the URL of your Casdoor server, e.g. `https://door.casdoor.com`.
+- Client ID and Client secret: of your Casdoor application.
+- Organization: only the users of this organization can log in, e.g. the organization of your Casdoor application. Leave it empty to allow the users of all organizations.
+- After login: go to the dashboard after logging in.
+- Existing users only: do not create WordPress users, only the users that already exist can log in.
+- Auto login: send the visitors that are not logged in to Casdoor on every page.
+- Logout: logging out of WordPress also ends the Casdoor session, so the next login asks for the credentials again. Add `http://your-wordpress-domain/` to the `Redirect URLs` of your Casdoor application too, Casdoor only redirects back to an allowed URL after the logout.
+
+The `[casdoor_login_button]` shortcode (`[sso_button]` still works) shows a login link anywhere.
 
 After successfully setting up this plugin, all login requests sent to login.php will be redirected to casdoor application.
 
@@ -66,14 +69,8 @@ This plugin uses PHPUnit for unit testing. To run the tests:
 
 ### Continuous Integration
 
-The project uses GitHub Actions for CI/CD:
+- **Tests** (`test.yml`) run on all pull requests and pushes to master, against PHP 7.4 to 8.3.
+- **Release** (`release.yml`): a `feat:` or `fix:` commit on master makes semantic-release tag a new version.
+- **Deploy** (`deploy.yml`): the tag writes its version into `casdoor.php` and `readme.txt` (never committed back), builds `casdoor.zip` without the files in `.distignore`, attaches it to the GitHub release and, once the `SVN_USERNAME` and `SVN_PASSWORD` secrets of the WordPress.org account are set, deploys it to the WordPress.org plugin directory.
 
-- **Tests**: Automatically runs on all pull requests and pushes to main/master branches
-- **Semantic Release**: Automatically creates releases when PRs are merged to main/master
-
-The test suite runs against multiple PHP versions (7.4, 8.0, 8.1, 8.2, 8.3) to ensure compatibility.
-
-## TODOS
-- Integrate `php-casdoor-sdk`
-- Publish this plugin to wordpress
-- Display warning and error messages
+`readme.txt` is the page of the plugin on WordPress.org, keep its `Tested up to` current.

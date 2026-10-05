@@ -18,10 +18,11 @@
         <exclude>
             <directory>./tests</directory>
             <directory>./vendor</directory>
-            <directory>./assets</directory>
+            <directory>./build</directory>
             <directory>./templates</directory>
             <file>./includes/callback.php</file>
-            <file>./wordpress-casdoor-plugin.php</file>
+            <file>./casdoor.php</file>
+            <file>./uninstall.php</file>
         </exclude>
     </coverage>
     <php>

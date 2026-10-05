@@ -1,7 +1,11 @@
 <?php
 
-// ABSPATH prevent public user to directly access your .php files through URL.
-defined('ABSPATH') or die('No script kiddies please!');
+defined('ABSPATH') || exit;
+
+// The option that keeps the settings of the plugin.
+if (!defined('CASDOOR_OPTIONS')) {
+    define('CASDOOR_OPTIONS', 'casdoor_options');
+}
 
 // The user meta that keeps the casdoor access token of a user, it is needed to log the
 // user out of casdoor when the user logs out of wordpress.
@@ -9,26 +13,33 @@ if (!defined('CASDOOR_TOKEN_META_KEY')) {
     define('CASDOOR_TOKEN_META_KEY', 'casdoor_access_token');
 }
 
-function defaults()
+/**
+ * The settings of a new installation.
+ *
+ * @return array
+ */
+function casdoor_default_options(): array
 {
     return [
+        'active'                => 0,
         'client_id'             => '',
         'client_secret'         => '',
         'backend'               => '',
+        'organization'          => '',
         'redirect_to_dashboard' => 0,
         'login_only'            => 0,
+        'auto_sso'              => 0,
         'logout_from_casdoor'   => 0,
     ];
 }
 
-function casdoor_get_options_internal()
+function casdoor_get_options_internal(): array
 {
-    $options = get_option(casdoor_admin::OPTIONS_NAME, []);
+    $options = get_option(CASDOOR_OPTIONS, []);
     if (!is_array($options)) {
-        $options = defaults();
+        $options = [];
     }
-    $options = array_merge(defaults(), $options);
-    return $options;
+    return array_merge(casdoor_default_options(), $options);
 }
 
 /**
@@ -41,8 +52,8 @@ function casdoor_get_options_internal()
 function casdoor_get_option(string $option_name)
 {
     $options = casdoor_get_options_internal();
-    if (!empty($v = $options[$option_name])) {
-        return $v;
+    if (!empty($options[$option_name])) {
+        return $options[$option_name];
     }
 }
 
@@ -50,7 +61,7 @@ function casdoor_set_options(string $key, $value)
 {
     $options = casdoor_get_options_internal();
     $options[$key] = $value;
-    update_option(casdoor_admin::OPTIONS_NAME, $options);
+    update_option(CASDOOR_OPTIONS, $options);
 }
 
 // The user meta that links a wordpress user to its casdoor user (the id of the casdoor user).
@@ -95,7 +106,7 @@ function casdoor_backend_url(string $path): string
  *
  * @return string
  */
-function get_casdoor_login_url(string $state = ''): string
+function casdoor_get_login_url(string $state = ''): string
 {
     $params = [
         'client_id'     => casdoor_get_option('client_id'),
@@ -153,7 +164,7 @@ function casdoor_create_state(string $redirect): string
  */
 function casdoor_consume_state(string $state)
 {
-    $cookie = isset($_COOKIE[CASDOOR_STATE_COOKIE]) && is_string($_COOKIE[CASDOOR_STATE_COOKIE]) ? $_COOKIE[CASDOOR_STATE_COOKIE] : '';
+    $cookie = isset($_COOKIE[CASDOOR_STATE_COOKIE]) && is_string($_COOKIE[CASDOOR_STATE_COOKIE]) ? sanitize_text_field(wp_unslash($_COOKIE[CASDOOR_STATE_COOKIE])) : '';
     casdoor_set_state_cookie('', time() - HOUR_IN_SECONDS);
 
     if ($state === '' || $cookie === '' || !hash_equals($cookie, $state) || !preg_match('/^[a-zA-Z0-9]+$/', $state)) {
@@ -278,11 +289,13 @@ function casdoor_token_subject(string $token): string
  */
 function casdoor_find_user($account)
 {
+    // phpcs:disable WordPress.DB.SlowDBQuery -- one lookup per login, by the link to the casdoor user.
     $users = get_users([
         'meta_key'   => CASDOOR_USER_META_KEY,
         'meta_value' => casdoor_account_id($account),
         'number'     => 1,
     ]);
+    // phpcs:enable WordPress.DB.SlowDBQuery
     if (!empty($users)) {
         return $users[0];
     }
@@ -369,7 +382,7 @@ function casdoor_create_user($account)
  */
 function casdoor_login_failed(string $message)
 {
-    wp_safe_redirect(add_query_arg('message', $message, home_url('/')));
+    wp_safe_redirect(add_query_arg('casdoor_message', $message, home_url('/')));
     exit;
 }
 
@@ -386,7 +399,7 @@ function casdoor_login_failed(string $message)
  *
  * @return string
  */
-function get_casdoor_logout_url(int $user_id, string $redirect = ''): string
+function casdoor_get_logout_url(int $user_id, string $redirect = ''): string
 {
     $backend = casdoor_get_option('backend');
     if (empty($backend) || empty($user_id)) {
@@ -456,40 +469,54 @@ function casdoor_native_login_url(string $login_url): string
 }
 
 /**
- * Add login button for casdoor on the login form.
+ * Add login button for casdoor on the login form, it is added in Casdoor_Plugin::custom_login()
+ * when the wordpress login form is shown.
  *
- * @link https://codex.wordpress.org/Plugin_API/Action_Reference/login_form
+ * @link https://developer.wordpress.org/reference/hooks/login_form/
  */
 function casdoor_login_form_button()
 {
-    ?>
-    <a style="color:#FFF; width:100%; text-align:center; margin-bottom:1em;" class="button button-primary button-large"
-       href="<?php echo site_url('?auth=casdoor'); ?>">Casdoor Single Sign On</a>
-    <div style="clear:both;"></div>
-    <?php
+    printf(
+        '<p style="margin-bottom:1em;"><a class="button button-primary button-large" style="width:100%%;text-align:center;" href="%s">%s</a></p>',
+        esc_url(casdoor_redirect_uri()),
+        esc_html__('Log in with Casdoor', 'casdoor')
+    );
 }
-// It is added to the login form in Casdoor::custom_login() when the wordpress login form is shown.
 
 /**
- * Login Button Shortcode
+ * The [casdoor_login_button] shortcode, a link that starts the login.
  *
- * @param  [type] $atts [description]
+ * @param array|string $atts
  *
- * @return [type]       [description]
+ * @return string
  */
-function casdoor_login_button_shortcode($atts)
+function casdoor_login_button_shortcode($atts): string
 {
     $a = shortcode_atts([
-        'type'   => 'primary',
-        'title'  => 'Login using Casdoor',
+        'title'  => __('Log in with Casdoor', 'casdoor'),
         'class'  => 'sso-button',
-        'target' => '_blank',
-        'text'   => 'Casdoor Single Sign On'
+        'target' => '_self',
+        'text'   => __('Log in with Casdoor', 'casdoor'),
     ], $atts);
 
-    return '<a class="' . $a['class'] . '" href="' . site_url('?auth=casdoor') . '" title="' . $a['title'] . '" target="' . $a['target'] . '">' . $a['text'] . '</a>';
+    return sprintf(
+        '<a class="%s" href="%s" title="%s" target="%s">%s</a>',
+        esc_attr($a['class']),
+        esc_url(casdoor_redirect_uri()),
+        esc_attr($a['title']),
+        esc_attr($a['target']),
+        esc_html($a['text'])
+    );
 }
-add_shortcode('sso_button', 'casdoor_login_button_shortcode');
+
+function casdoor_register_shortcodes()
+{
+    add_shortcode('casdoor_login_button', 'casdoor_login_button_shortcode');
+    // The old name of the shortcode, kept for the pages that use it.
+    if (!shortcode_exists('sso_button')) {
+        add_shortcode('sso_button', 'casdoor_login_button_shortcode');
+    }
+}
 
 /**
  * Get user login redirect.
@@ -499,10 +526,6 @@ add_shortcode('sso_button', 'casdoor_login_button_shortcode');
  */
 function casdoor_get_user_redirect_url(): string
 {
-    $options           = get_option('casdoor_options');
-    // Retrieves the URL to the user’s dashboard.
-    $user_redirect_set = $options['redirect_to_dashboard'] == '1' ? get_dashboard_url() : site_url();
-    $user_redirect     = apply_filters('casdoor_user_redirect_url', $user_redirect_set);
-
-    return $user_redirect;
+    $user_redirect = casdoor_get_option('redirect_to_dashboard') == 1 ? get_dashboard_url() : site_url();
+    return apply_filters('casdoor_user_redirect_url', $user_redirect);
 }

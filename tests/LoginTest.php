@@ -18,6 +18,8 @@ class LoginTest extends TestCase
         Functions\when('add_shortcode')->justReturn(true);
         Functions\when('is_ssl')->justReturn(true);
         Functions\when('setcookie')->justReturn(true);
+        Functions\when('wp_unslash')->returnArg();
+        Functions\when('sanitize_text_field')->returnArg();
 
         if (!defined('MINUTE_IN_SECONDS')) {
             define('MINUTE_IN_SECONDS', 60);
@@ -26,7 +28,6 @@ class LoginTest extends TestCase
             define('HOUR_IN_SECONDS', 3600);
         }
 
-        require_once dirname(__DIR__) . '/includes/admin-options.php';
         require_once dirname(__DIR__) . '/includes/functions.php';
     }
 
