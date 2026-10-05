@@ -74,3 +74,4 @@ This plugin uses PHPUnit for unit testing. To run the tests:
 - **Deploy** (`deploy.yml`): the tag writes its version into `casdoor.php` and `readme.txt` (never committed back), builds `casdoor.zip` without the files in `.distignore`, attaches it to the GitHub release and, once the `SVN_USERNAME` and `SVN_PASSWORD` secrets of the WordPress.org account are set, deploys it to the WordPress.org plugin directory.
 
 `readme.txt` is the page of the plugin on WordPress.org, keep its `Tested up to` current.
+The icon, banner and screenshots of that page are in `.wordpress-org/`, they are uploaded to the `assets` folder of the SVN repository by the deploy and are not in the plugin zip.

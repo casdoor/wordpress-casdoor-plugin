@@ -69,6 +69,10 @@ The WordPress user that is linked to the Casdoor user, the one that logged in wi
 
 Yes, with the `casdoor_user_redirect_url` filter. The `casdoor_user_login` and `casdoor_user_created` actions run after a login and after a new user is created.
 
+== Screenshots ==
+
+1. The settings page (Settings > Casdoor SSO): connect your Casdoor application and choose how users log in.
+
 == Changelog ==
 
 See the [releases on GitHub](https://github.com/casdoor/wordpress-casdoor-plugin/releases).
